@@ -154,14 +154,18 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
     const isPartiallyWatched = watchProgress.watchedEpisodes > 0 && watchProgress.watchedEpisodes < watchProgress.totalEpisodes;
     const hasNoWatchedEpisodes = watchProgress.watchedEpisodes === 0;
     
+    const completionPercentage = (watchProgress.watchedEpisodes / watchProgress.totalEpisodes) * 100;
+    const isNearlyComplete = completionPercentage >= 90;
+    
     if (hasNoWatchedEpisodes && existing) {
       removeInteraction(mediaId, mediaType);
       return;
     }
     
     let newType: InteractionType = 'watched';
-    if (isFullyWatched) {
+    if (isFullyWatched || isNearlyComplete) {
       newType = 'watched';
+      console.log(`[Library] Auto-completing ${mediaId} at ${completionPercentage.toFixed(1)}% completion`);
     } else if (isPartiallyWatched) {
       newType = 'watching';
     } else if (existing?.type === 'watchlist') {

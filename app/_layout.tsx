@@ -33,7 +33,9 @@ function RootLayoutNav() {
         },
       }}
     >
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="smart-lists" options={{ headerShown: true, title: 'Akıllı Listeler' }} />
       <Stack.Screen 
         name="movie/[id]" 
         options={{ 

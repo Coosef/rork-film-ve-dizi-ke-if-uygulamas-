@@ -20,14 +20,14 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import { getShowDetails, convertShowToMediaItem, GENRES } from '@/services/tvmaze';
 import { MediaItem } from '@/types/tvmaze';
 
-type TabType = 'watchlist' | 'watching' | 'watched' | 'favorite';
+type TabType = 'watchlist' | 'watching' | 'watched' | 'favorite' | 'smart';
 type SortType = 'title' | 'rating' | 'date' | 'popularity';
 
 export default function LibraryScreen() {
   const router = useRouter();
   const { getInteractionsByType } = useLibrary();
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<TabType>('watchlist');
+  const [activeTab, setActiveTab] = useState<TabType | 'smart'>('watchlist');
   const [refreshing, setRefreshing] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
@@ -35,7 +35,7 @@ export default function LibraryScreen() {
   const [sortBy, setSortBy] = useState<SortType>('date');
   const [sortAscending, setSortAscending] = useState(false);
 
-  const interactions = getInteractionsByType(activeTab);
+  const interactions = activeTab === 'smart' ? [] : getInteractionsByType(activeTab);
   const movieIds = interactions.map(i => i.mediaId);
 
   const moviesQueries = useQuery({
@@ -115,11 +115,45 @@ export default function LibraryScreen() {
     setShowSortModal(false);
   };
 
-  const tabs: { key: TabType; label: string; count: number }[] = [
+  const allInteractions = useMemo(() => {
+    return [
+      ...getInteractionsByType('watchlist'),
+      ...getInteractionsByType('watching'),
+      ...getInteractionsByType('watched'),
+      ...getInteractionsByType('favorite'),
+    ];
+  }, [getInteractionsByType]);
+
+  const smartLists = useMemo(() => {
+    const now = new Date();
+    const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+    return {
+      newSeasons: allInteractions.filter(i => {
+        const lastWatched = i.watchProgress?.lastWatchedAt;
+        if (!lastWatched) return false;
+        return new Date(lastWatched) > threeMonthsAgo;
+      }),
+      abandoned: allInteractions.filter(i => {
+        const progress = i.watchProgress;
+        if (!progress) return false;
+        const percentage = (progress.watchedEpisodes / progress.totalEpisodes) * 100;
+        return percentage > 10 && percentage < 90;
+      }),
+      quickFinish: allInteractions.filter(i => {
+        const progress = i.watchProgress;
+        if (!progress) return false;
+        return progress.totalEpisodes <= 10 && progress.watchedEpisodes < progress.totalEpisodes;
+      }),
+    };
+  }, [allInteractions]);
+
+  const tabs: { key: TabType | 'smart'; label: string; count: number }[] = [
     { key: 'watchlist', label: 'İzlenecekler', count: getInteractionsByType('watchlist').length },
     { key: 'watching', label: 'İzlemeye Devam', count: getInteractionsByType('watching').length },
     { key: 'watched', label: 'İzlenenler', count: getInteractionsByType('watched').length },
     { key: 'favorite', label: 'Favoriler', count: getInteractionsByType('favorite').length },
+    { key: 'smart', label: 'Akıllı Listeler', count: smartLists.newSeasons.length + smartLists.abandoned.length + smartLists.quickFinish.length },
   ];
 
   const renderEmpty = () => (
@@ -166,7 +200,7 @@ export default function LibraryScreen() {
             </Pressable>
           </View>
         </View>
-        {movies.length > 0 && (
+        {movies.length > 0 && activeTab !== 'smart' && (
           <View style={styles.completionCard}>
             <View style={styles.completionHeader}>
               <Text style={styles.completionTitle}>Tamamlanma Oranı</Text>
@@ -244,7 +278,16 @@ export default function LibraryScreen() {
         ))}
       </ScrollView>
 
-      {moviesQueries.isLoading ? (
+      {activeTab === 'smart' ? (
+        <View style={styles.smartListsContainer}>
+          <Pressable
+            style={styles.smartListsButton}
+            onPress={() => router.push('/smart-lists')}
+          >
+            <Text style={styles.smartListsButtonText}>Akıllı Listeleri Görüntüle</Text>
+          </Pressable>
+        </View>
+      ) : moviesQueries.isLoading ? (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Yükleniyor...</Text>
         </View>
@@ -743,5 +786,22 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.dark.border,
     marginLeft: 68,
+  },
+  smartListsContainer: {
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: 32,
+  },
+  smartListsButton: {
+    backgroundColor: Colors.dark.primary,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+  },
+  smartListsButtonText: {
+    color: Colors.dark.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
 });

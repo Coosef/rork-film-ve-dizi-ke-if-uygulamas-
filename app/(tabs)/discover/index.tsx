@@ -37,15 +37,16 @@ const ROTATION_ANGLE = 10;
 
 export default function DiscoverScreen() {
   const router = useRouter();
-  const { addInteraction } = useLibrary();
+  const { addInteraction, getInteraction, removeInteraction } = useLibrary();
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [swipedCards, setSwipedCards] = useState<number[]>([]);
+  const [swipedCards, setSwipedCards] = useState<{ index: number; direction: 'left' | 'right' }[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [showGenreModal, setShowGenreModal] = useState(false);
   const [page, setPage] = useState(1);
   const [allMovies, setAllMovies] = useState<MediaItem[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
+  const MAX_UNDO_STACK = 10;
   
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -99,7 +100,10 @@ export default function DiscoverScreen() {
       console.log('[Discover] Skipped:', currentMovie.title);
     }
 
-    setSwipedCards([...swipedCards, currentIndex]);
+    setSwipedCards(prev => {
+      const newStack = [...prev, { index: currentIndex, direction }];
+      return newStack.slice(-MAX_UNDO_STACK);
+    });
     setCurrentIndex(currentIndex + 1);
     
     setTimeout(() => {
@@ -234,8 +238,19 @@ export default function DiscoverScreen() {
   };
 
   const handleUndo = () => {
-    if (currentIndex > 0 && !isAnimating) {
-      setCurrentIndex(currentIndex - 1);
+    if (swipedCards.length > 0 && !isAnimating) {
+      const lastSwipe = swipedCards[swipedCards.length - 1];
+      const lastMovie = movies[lastSwipe.index];
+      
+      if (lastMovie) {
+        const interactionType = lastSwipe.direction === 'right' ? 'favorite' : 'skipped';
+        const interaction = getInteraction(lastMovie.id, lastMovie.type);
+        if (interaction && interaction.type === interactionType) {
+          removeInteraction(lastMovie.id, lastMovie.type);
+        }
+      }
+      
+      setCurrentIndex(lastSwipe.index);
       setSwipedCards(swipedCards.slice(0, -1));
       translateX.value = 0;
       translateY.value = 0;
@@ -410,9 +425,9 @@ export default function DiscoverScreen() {
         <Pressable 
           style={[styles.actionButton, isAnimating && styles.actionButtonDisabled]} 
           onPress={handleUndo}
-          disabled={isAnimating || currentIndex === 0}
+          disabled={isAnimating || swipedCards.length === 0}
         >
-          <RotateCcw size={28} color={isAnimating || currentIndex === 0 ? Colors.dark.textSecondary : Colors.dark.warning} />
+          <RotateCcw size={28} color={isAnimating || swipedCards.length === 0 ? Colors.dark.textSecondary : Colors.dark.warning} />
         </Pressable>
         <Pressable 
           style={[styles.actionButton, styles.passButton, isAnimating && styles.actionButtonDisabled]} 
