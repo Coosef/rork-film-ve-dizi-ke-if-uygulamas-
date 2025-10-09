@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Plus, Check, Heart, Star, Clock, Calendar, ChevronDown, ChevronUp, Play, ExternalLink, MessageCircle, ThumbsUp, Tv, Smartphone, Building2, Globe, CheckCircle2, Edit3 } from 'lucide-react-native';
+import { ArrowLeft, Plus, Check, Heart, Star, Clock, Calendar, ChevronDown, ChevronUp, Play, ExternalLink, MessageCircle, ThumbsUp, Building2, Globe, CheckCircle2, Edit3 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import {
@@ -23,6 +23,8 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import { WatchProgress } from '@/types/library';
 import { getShowDetails, getImageUrl, convertShowToMediaItem, getSimilarShows } from '@/services/tvmaze';
 import { MediaItem, TVMazeShow } from '@/types/tvmaze';
+import { getStreamingProviders, StreamingProvider } from '@/services/streaming';
+import { searchTMDBByName } from '@/services/hybrid';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -103,6 +105,23 @@ export default function MovieDetailScreen() {
     enabled: movieId > 0,
   });
 
+  const streamingQuery = useQuery({
+    queryKey: ['streaming', movieId],
+    queryFn: async () => {
+      try {
+        const show = await getShowDetails(movieId);
+        const tmdbMatch = await searchTMDBByName(show.name, show.premiered);
+        if (!tmdbMatch) return [];
+        const providers = await getStreamingProviders(tmdbMatch.id, 'tv');
+        return providers;
+      } catch (error) {
+        console.log('[Streaming] Error:', error);
+        return [];
+      }
+    },
+    enabled: movieId > 0,
+  });
+
   const movie = movieQuery.data;
   const inWatchlist = isInWatchlist(movieId, 'tv');
   const favorite = isFavorite(movieId, 'tv');
@@ -156,6 +175,7 @@ export default function MovieDetailScreen() {
   const seasons = seasonsQuery.data || [];
   const episodes = episodesQuery.data || [];
   const videos = videosQuery.data || [];
+  const streamingProviders = streamingQuery.data || [];
   const totalEpisodes = episodes.length;
   const watchedEpisodes = watchProgress?.watchedEpisodes || 0;
   const progressPercentage = totalEpisodes > 0 ? (watchedEpisodes / totalEpisodes) * 100 : 0;
@@ -529,58 +549,47 @@ export default function MovieDetailScreen() {
             </View>
           )}
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Nerede İzleyebilirsiniz?</Text>
-            <View style={styles.platformsContainer}>
-              <View style={styles.platformCard}>
-                <View style={styles.platformIcon}>
-                  <Tv size={24} color={Colors.dark.primary} />
-                </View>
-                <View style={styles.platformInfo}>
-                  <Text style={styles.platformName}>Netflix</Text>
-                  <Text style={styles.platformType}>Streaming</Text>
-                </View>
-                <Pressable
-                  style={styles.platformButton}
-                  onPress={() => Linking.openURL('https://www.netflix.com')}
-                >
-                  <Text style={styles.platformButtonText}>Git</Text>
-                </Pressable>
+          {streamingProviders.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Nerede İzleyebilirsiniz?</Text>
+              <View style={styles.platformsContainer}>
+                {streamingProviders.map((provider: StreamingProvider) => (
+                  <View key={provider.providerId} style={styles.platformCard}>
+                    <Image
+                      source={{ uri: provider.logoPath }}
+                      style={styles.platformLogo}
+                      contentFit="contain"
+                    />
+                    <View style={styles.platformInfo}>
+                      <Text style={styles.platformName}>{provider.provider}</Text>
+                      <Text style={styles.platformType}>Streaming</Text>
+                    </View>
+                    <Pressable
+                      style={styles.platformButton}
+                      onPress={() => {
+                        if (provider.link) {
+                          Linking.openURL(provider.link).catch(() => {
+                            Linking.openURL(`https://www.themoviedb.org/tv/${movieId}/watch`);
+                          });
+                        } else {
+                          Linking.openURL(`https://www.themoviedb.org/tv/${movieId}/watch`);
+                        }
+                      }}
+                    >
+                      <Text style={styles.platformButtonText}>Git</Text>
+                    </Pressable>
+                  </View>
+                ))}
               </View>
-
-              <View style={styles.platformCard}>
-                <View style={styles.platformIcon}>
-                  <Tv size={24} color={Colors.dark.primary} />
-                </View>
-                <View style={styles.platformInfo}>
-                  <Text style={styles.platformName}>Amazon Prime</Text>
-                  <Text style={styles.platformType}>Streaming</Text>
-                </View>
-                <Pressable
-                  style={styles.platformButton}
-                  onPress={() => Linking.openURL('https://www.primevideo.com')}
-                >
-                  <Text style={styles.platformButtonText}>Git</Text>
-                </Pressable>
-              </View>
-
-              <View style={styles.platformCard}>
-                <View style={styles.platformIcon}>
-                  <Smartphone size={24} color={Colors.dark.primary} />
-                </View>
-                <View style={styles.platformInfo}>
-                  <Text style={styles.platformName}>Disney+</Text>
-                  <Text style={styles.platformType}>Streaming</Text>
-                </View>
-                <Pressable
-                  style={styles.platformButton}
-                  onPress={() => Linking.openURL('https://www.disneyplus.com')}
-                >
-                  <Text style={styles.platformButtonText}>Git</Text>
-                </Pressable>
-              </View>
+              <Pressable
+                style={styles.moreProvidersButton}
+                onPress={() => Linking.openURL(`https://www.themoviedb.org/tv/${movieId}/watch`)}
+              >
+                <Globe size={16} color={Colors.dark.primary} />
+                <Text style={styles.moreProvidersText}>Tüm platformları görüntüle</Text>
+              </Pressable>
             </View>
-          </View>
+          )}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Kullanıcı Değerlendirmeleri</Text>
@@ -1203,6 +1212,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.dark.border,
   },
+  platformLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: Colors.dark.backgroundSecondary,
+  },
   platformIcon: {
     width: 48,
     height: 48,
@@ -1232,6 +1247,23 @@ const styles = StyleSheet.create({
   },
   platformButtonText: {
     color: Colors.dark.text,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  moreProvidersButton: {
+    flexDirection: 'row',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    backgroundColor: Colors.dark.surfaceLight,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    marginTop: 8,
+  },
+  moreProvidersText: {
+    color: Colors.dark.primary,
     fontSize: 14,
     fontWeight: '600' as const,
   },
