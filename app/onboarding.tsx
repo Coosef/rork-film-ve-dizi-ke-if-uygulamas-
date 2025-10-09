@@ -21,9 +21,18 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { updatePreferences } = usePreferences();
+  const { updatePreferences, preferences } = usePreferences();
   const insets = useSafeAreaInsets();
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const isReturningUser = preferences.hasCompletedOnboarding;
+  
+  const initialGenres = React.useMemo(() => {
+    if (preferences.favoriteGenres && preferences.favoriteGenres.length > 0) {
+      return preferences.favoriteGenres.map((index: number) => GENRES[index]).filter(Boolean);
+    }
+    return [];
+  }, [preferences.favoriteGenres]);
+  
+  const [selectedGenres, setSelectedGenres] = useState<string[]>(initialGenres);
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres(prev =>
@@ -43,8 +52,12 @@ export default function OnboardingScreen() {
       console.log('[Onboarding] Preferences saved successfully');
       
       setTimeout(() => {
-        console.log('[Onboarding] Navigating to home');
-        router.replace('/(tabs)/(home)');
+        console.log('[Onboarding] Navigating back');
+        if (isReturningUser) {
+          router.back();
+        } else {
+          router.replace('/(tabs)/(home)');
+        }
       }, 300);
     } catch (error) {
       console.error('[Onboarding] Failed to save preferences:', error);
@@ -64,9 +77,12 @@ export default function OnboardingScreen() {
             <View style={styles.iconContainer}>
               <Sparkles size={48} color={Colors.dark.primary} />
             </View>
-            <Text style={styles.title}>Hoş Geldiniz!</Text>
+            <Text style={styles.title}>{isReturningUser ? 'Tür Tercihleriniz' : 'Hoş Geldiniz!'}</Text>
             <Text style={styles.subtitle}>
-              Size özel öneriler sunabilmemiz için en az 3 tür seçin
+              {isReturningUser 
+                ? 'Tercihlerinizi güncelleyin (en az 3 tür)'
+                : 'Size özel öneriler sunabilmemiz için en az 3 tür seçin'
+              }
             </Text>
           </View>
 
@@ -134,7 +150,7 @@ export default function OnboardingScreen() {
                   !canContinue && styles.continueButtonTextDisabled,
                 ]}
               >
-                Başla
+                {isReturningUser ? 'Kaydet' : 'Başla'}
               </Text>
             </Pressable>
           </View>

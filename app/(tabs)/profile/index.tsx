@@ -1,6 +1,7 @@
 import { Film, Heart, Clock, TrendingUp, Settings, User, Bell, Shield, Moon, Globe, Volume2, Vibrate, ChevronRight, BarChart3, Award, Target, Flame, Zap, Star, Tv, Camera, Edit3, Share2, Users, MessageCircle, Trophy, Gift } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import {
   StyleSheet,
   Text,
@@ -20,6 +21,7 @@ import { getShowDetails } from '@/services/tvmaze';
 import { TVMazeShow } from '@/types/tvmaze';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { getInteractionsByType } = useLibrary();
   const { preferences, updatePreferences } = usePreferences();
   const insets = useSafeAreaInsets();
@@ -519,6 +521,29 @@ export default function ProfileScreen() {
               </Pressable>
             </View>
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.settingsSection}>
+                <Text style={styles.settingsSectionTitle}>Tercihler</Text>
+                <GlassPanel style={styles.settingsCard}>
+                  <Pressable 
+                    style={styles.settingItem}
+                    onPress={() => {
+                      setShowSettingsModal(false);
+                      setTimeout(() => {
+                        router.push('/onboarding');
+                      }, 300);
+                    }}
+                  >
+                    <View style={styles.settingLeft}>
+                      <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.primary}20` }]}>
+                        <Settings size={20} color={Colors.dark.primary} />
+                      </View>
+                      <Text style={styles.settingText}>Tür Tercihlerini Değiştir</Text>
+                    </View>
+                    <ChevronRight size={20} color={Colors.dark.textSecondary} />
+                  </Pressable>
+                </GlassPanel>
+              </View>
+
               <View style={styles.settingsSection}>
                 <Text style={styles.settingsSectionTitle}>Görünüm</Text>
                 <GlassPanel style={styles.settingsCard}>
