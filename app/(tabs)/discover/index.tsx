@@ -66,6 +66,8 @@ export default function DiscoverScreen() {
       voteCount: show.weight,
       genres: show.genres,
     }))) : getDiscoverStack(page),
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 15,
   });
 
   React.useEffect(() => {

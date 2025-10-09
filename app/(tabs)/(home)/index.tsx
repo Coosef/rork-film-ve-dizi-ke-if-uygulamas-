@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Play, Plus, Info, Search, Clock, CheckCircle2 } from 'lucide-react-native';
+import { Play, Plus, Info, Search, Clock } from 'lucide-react-native';
 import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
@@ -43,27 +43,37 @@ export default function HomeScreen() {
   const trendingQuery = useQuery({
     queryKey: ['trending'],
     queryFn: () => getTrending(),
+    staleTime: 1000 * 60 * 60 * 6,
+    gcTime: 1000 * 60 * 60 * 12,
   });
 
   const popularQuery = useQuery({
     queryKey: ['popular'],
     queryFn: () => getPopular(),
+    staleTime: 1000 * 60 * 60 * 6,
+    gcTime: 1000 * 60 * 60 * 12,
   });
 
   const topRatedQuery = useQuery({
     queryKey: ['topRated'],
     queryFn: () => getTopRated(),
+    staleTime: 1000 * 60 * 60 * 6,
+    gcTime: 1000 * 60 * 60 * 12,
   });
 
   const newReleasesQuery = useQuery({
     queryKey: ['newReleases'],
     queryFn: () => getNewReleases(),
+    staleTime: 1000 * 60 * 60 * 1,
+    gcTime: 1000 * 60 * 60 * 6,
   });
 
   const searchQuery_data = useQuery({
     queryKey: ['search', searchQuery],
     queryFn: () => searchShows(searchQuery),
     enabled: searchQuery.length > 2,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 15,
   });
 
   const heroShows = trendingQuery.data?.slice(0, 5) || [];
@@ -74,7 +84,9 @@ export default function HomeScreen() {
   }, [getInteractionsByType]);
 
   const continueWatchingQuery = useQuery({
-    queryKey: ['continueWatching', watchingInteractions.map(i => i.mediaId)],
+    queryKey: ['continueWatching', watchingInteractions.map(i => i.mediaId), watchingInteractions.length],
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
     queryFn: async () => {
       console.log('[ContinueWatching] Fetching shows for', watchingInteractions.length, 'interactions');
       const shows = await Promise.all(
@@ -109,6 +121,8 @@ export default function HomeScreen() {
 
   const recommendedQuery = useQuery({
     queryKey: ['recommended', interactions.map(i => i.mediaId).join(',')],
+    staleTime: 1000 * 60 * 60 * 1,
+    gcTime: 1000 * 60 * 60 * 6,
     queryFn: async () => {
       const favoriteInteractions = getInteractionsByType('favorite');
       const watchedInteractions = getInteractionsByType('watched');

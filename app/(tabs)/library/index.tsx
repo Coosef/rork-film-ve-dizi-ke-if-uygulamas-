@@ -47,6 +47,8 @@ export default function LibraryScreen() {
       return shows.filter(Boolean).map(s => convertShowToMediaItem(s!));
     },
     enabled: movieIds.length > 0,
+    staleTime: 1000 * 60 * 60 * 1,
+    gcTime: 1000 * 60 * 60 * 6,
   });
 
   const filteredAndSortedMovies = useMemo(() => {
