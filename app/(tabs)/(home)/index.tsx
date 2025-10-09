@@ -110,22 +110,33 @@ export default function HomeScreen() {
     queryFn: async () => {
       const favoriteInteractions = getInteractionsByType('favorite');
       const watchedInteractions = getInteractionsByType('watched');
-      const allInteractions = [...favoriteInteractions, ...watchedInteractions];
+      const watchingInteractions = getInteractionsByType('watching');
+      const allInteractions = [...favoriteInteractions, ...watchedInteractions, ...watchingInteractions];
       
       if (allInteractions.length === 0) {
         return [];
       }
 
       const genreCounts: Record<string, number> = {};
+      const ratingSum: Record<string, { sum: number; count: number }> = {};
       
-      for (const interaction of allInteractions.slice(0, 10)) {
+      for (const interaction of allInteractions.slice(0, 15)) {
         try {
           const response = await fetch(`https://api.tvmaze.com/shows/${interaction.mediaId}`);
           if (!response.ok) continue;
           const show = await response.json();
           
           show.genres?.forEach((genre: string) => {
-            genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+            const weight = interaction.type === 'favorite' ? 3 : interaction.type === 'watching' ? 2 : 1;
+            genreCounts[genre] = (genreCounts[genre] || 0) + weight;
+            
+            if (interaction.rating) {
+              if (!ratingSum[genre]) {
+                ratingSum[genre] = { sum: 0, count: 0 };
+              }
+              ratingSum[genre].sum += interaction.rating;
+              ratingSum[genre].count += 1;
+            }
           });
         } catch (error) {
           console.error('[Recommended] Error fetching show:', error);
@@ -134,26 +145,41 @@ export default function HomeScreen() {
 
       const topGenres = Object.entries(genreCounts)
         .sort(([, a], [, b]) => b - a)
-        .slice(0, 3)
+        .slice(0, 5)
         .map(([genre]) => genre);
 
       if (topGenres.length === 0) {
         return [];
       }
 
-      const allShows = await getPopular();
+      const [popularShows, topRatedShows, trendingShows] = await Promise.all([
+        getPopular(),
+        getTopRated(),
+        getTrending(),
+      ]);
+      
+      const allShows = [...popularShows, ...topRatedShows, ...trendingShows];
+      const uniqueShows = Array.from(new Map(allShows.map(show => [show.id, show])).values());
       const watchedIds = new Set(interactions.map(i => i.mediaId));
       
-      const recommended = allShows
+      const recommended = uniqueShows
         .filter(show => !watchedIds.has(show.id))
         .filter(show => show.genres.some(genre => topGenres.includes(genre)))
-        .sort((a, b) => {
-          const aGenreCount = a.genres.filter(g => topGenres.includes(g)).length;
-          const bGenreCount = b.genres.filter(g => topGenres.includes(g)).length;
-          return bGenreCount - aGenreCount;
+        .map(show => {
+          const genreMatchCount = show.genres.filter(g => topGenres.includes(g)).length;
+          const genreScore = genreMatchCount * 10;
+          const ratingScore = show.rating.average || 0;
+          const popularityScore = Math.min(show.weight / 100, 10);
+          
+          return {
+            ...show,
+            recommendationScore: genreScore + ratingScore + popularityScore,
+          };
         })
+        .sort((a, b) => b.recommendationScore - a.recommendationScore)
         .slice(0, 20);
 
+      console.log('[Recommended] Generated', recommended.length, 'recommendations based on', topGenres.join(', '));
       return recommended;
     },
     enabled: interactions.length > 0,
