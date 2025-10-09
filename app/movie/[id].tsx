@@ -368,15 +368,9 @@ export default function MovieDetailScreen() {
             {userReview ? (
               <View style={styles.userReviewCard}>
                 <View style={styles.userReviewHeader}>
-                  <View style={styles.userReviewRating}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={`user-star-${star}`}
-                        size={20}
-                        color={star <= userReview.rating ? Colors.dark.warning : Colors.dark.textSecondary}
-                        fill={star <= userReview.rating ? Colors.dark.warning : 'transparent'}
-                      />
-                    ))}
+                  <View style={styles.userReviewScore}>
+                    <Text style={styles.userReviewScoreNumber}>{userReview.rating}</Text>
+                    <Text style={styles.userReviewScoreLabel}>/10</Text>
                   </View>
                   <Text style={styles.userReviewDate}>
                     {new Date(userReview.updatedAt).toLocaleDateString('tr-TR')}
@@ -809,19 +803,29 @@ export default function MovieDetailScreen() {
             </View>
             
             <View style={styles.reviewModalBody}>
-              <Text style={styles.reviewModalLabel}>Puanınız</Text>
+              <Text style={styles.reviewModalLabel}>Puanınız (1-10)</Text>
+              <View style={styles.ratingNumberContainer}>
+                <Text style={styles.ratingNumber}>{reviewRating || '-'}</Text>
+                <Text style={styles.ratingLabel}>/10</Text>
+              </View>
               <View style={styles.ratingSelector}>
-                {[1, 2, 3, 4, 5].map((star) => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
                   <Pressable
-                    key={`rating-${star}`}
-                    onPress={() => setReviewRating(star)}
-                    style={styles.ratingStar}
+                    key={`rating-${rating}`}
+                    onPress={() => setReviewRating(rating)}
+                    style={[
+                      styles.ratingButton,
+                      rating === reviewRating && styles.ratingButtonActive,
+                    ]}
                   >
-                    <Star
-                      size={40}
-                      color={star <= reviewRating ? Colors.dark.warning : Colors.dark.textSecondary}
-                      fill={star <= reviewRating ? Colors.dark.warning : 'transparent'}
-                    />
+                    <Text
+                      style={[
+                        styles.ratingButtonText,
+                        rating === reviewRating && styles.ratingButtonTextActive,
+                      ]}
+                    >
+                      {rating}
+                    </Text>
                   </Pressable>
                 ))}
               </View>
@@ -1415,6 +1419,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center' as const,
   },
+  userReviewScore: {
+    flexDirection: 'row',
+    alignItems: 'baseline' as const,
+    gap: 4,
+  },
+  userReviewScoreNumber: {
+    fontSize: 32,
+    fontWeight: '700' as const,
+    color: Colors.dark.primary,
+  },
+  userReviewScoreLabel: {
+    fontSize: 18,
+    color: Colors.dark.textSecondary,
+  },
   userReviewRating: {
     flexDirection: 'row',
     gap: 4,
@@ -1491,10 +1509,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
   },
+  ratingNumberContainer: {
+    alignItems: 'center' as const,
+    marginBottom: 16,
+  },
+  ratingNumber: {
+    fontSize: 64,
+    fontWeight: '700' as const,
+    color: Colors.dark.primary,
+  },
+  ratingLabel: {
+    fontSize: 24,
+    color: Colors.dark.textSecondary,
+    marginTop: -8,
+  },
   ratingSelector: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center' as const,
     gap: 8,
+  },
+  ratingButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.dark.surfaceLight,
+    borderWidth: 2,
+    borderColor: Colors.dark.border,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  ratingButtonActive: {
+    backgroundColor: Colors.dark.primary,
+    borderColor: Colors.dark.primary,
+  },
+  ratingButtonText: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: Colors.dark.textSecondary,
+  },
+  ratingButtonTextActive: {
+    color: Colors.dark.text,
   },
   ratingStar: {
     padding: 4,

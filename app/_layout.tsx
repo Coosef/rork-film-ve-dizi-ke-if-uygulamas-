@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { LibraryProvider } from "@/contexts/LibraryContext";
-import { PreferencesProvider } from "@/contexts/PreferencesContext";
+import { PreferencesProvider, usePreferences } from "@/contexts/PreferencesContext";
 import Colors from "@/constants/colors";
 import { trpc, trpcClient } from "@/lib/trpc";
 
@@ -20,6 +20,29 @@ const queryClient = new QueryClient({
 });
 
 function RootLayoutNav() {
+  const { preferences, isLoading } = usePreferences();
+  const router = useRouter();
+  const segments = useSegments();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inOnboarding = segments[0] === 'onboarding';
+    const hasCompletedOnboarding = preferences.hasCompletedOnboarding;
+
+    console.log('[RootLayout] Onboarding check:', { hasCompletedOnboarding, inOnboarding, segments });
+
+    if (!hasCompletedOnboarding && !inOnboarding) {
+      router.replace('/onboarding');
+    } else if (hasCompletedOnboarding && inOnboarding) {
+      router.replace('/(tabs)/(home)');
+    }
+  }, [preferences.hasCompletedOnboarding, isLoading, segments, router]);
+
+  if (isLoading) {
+    return null;
+  }
+
   return (
     <Stack 
       screenOptions={{ 

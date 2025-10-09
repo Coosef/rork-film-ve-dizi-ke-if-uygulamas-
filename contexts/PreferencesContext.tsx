@@ -19,6 +19,7 @@ export const [PreferencesProvider, usePreferences] = createContextHook(() => {
     autoPlayTrailers: false,
     hapticsEnabled: true,
     favoriteGenres: [],
+    hasCompletedOnboarding: false,
   }, [preferencesQuery.data]);
   const isLoading = preferencesQuery.isLoading;
 

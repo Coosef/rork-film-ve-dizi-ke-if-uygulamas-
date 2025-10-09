@@ -52,4 +52,5 @@ export interface UserPreferences {
   autoPlayTrailers: boolean;
   hapticsEnabled: boolean;
   favoriteGenres: number[];
+  hasCompletedOnboarding?: boolean;
 }

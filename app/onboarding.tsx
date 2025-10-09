@@ -36,6 +36,7 @@ export default function OnboardingScreen() {
   const handleComplete = () => {
     updatePreferences({ 
       favoriteGenres: selectedGenres.map(g => GENRES.indexOf(g)),
+      hasCompletedOnboarding: true,
     });
     router.replace('/(tabs)/(home)');
   };
