@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { LibraryProvider } from "@/contexts/LibraryContext";
 import { PreferencesProvider } from "@/contexts/PreferencesContext";
 import Colors from "@/constants/colors";
+import { trpc, trpcClient } from "@/lib/trpc";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -50,14 +51,16 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <PreferencesProvider>
-        <LibraryProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <RootLayoutNav />
-          </GestureHandlerRootView>
-        </LibraryProvider>
-      </PreferencesProvider>
-    </QueryClientProvider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <PreferencesProvider>
+          <LibraryProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <RootLayoutNav />
+            </GestureHandlerRootView>
+          </LibraryProvider>
+        </PreferencesProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
