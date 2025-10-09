@@ -28,6 +28,7 @@ import {
   convertShowToMediaItem,
   searchShows,
   getNewReleases,
+  GENRES,
 } from '@/services/tvmaze';
 import { MediaItem } from '@/types/tvmaze';
 
@@ -36,7 +37,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function HomeScreen() {
   const router = useRouter();
   const { addInteraction, getInteractionsByType, interactions } = useLibrary();
-  const { isLoading: preferencesLoading } = usePreferences();
+  const { isLoading: preferencesLoading, preferences } = usePreferences();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -120,7 +121,7 @@ export default function HomeScreen() {
   const continueWatchingShows = continueWatchingQuery.data || [];
 
   const recommendedQuery = useQuery({
-    queryKey: ['recommended', interactions.map(i => i.mediaId).join(',')],
+    queryKey: ['recommended', interactions.map(i => i.mediaId).join(','), preferences.favoriteGenres?.join(',') || ''],
     staleTime: 1000 * 60 * 60 * 1,
     gcTime: 1000 * 60 * 60 * 6,
     queryFn: async () => {
@@ -129,12 +130,17 @@ export default function HomeScreen() {
       const watchingInteractions = getInteractionsByType('watching');
       const allInteractions = [...favoriteInteractions, ...watchedInteractions, ...watchingInteractions];
       
-      if (allInteractions.length === 0) {
-        return [];
-      }
-
       const genreCounts: Record<string, number> = {};
-      const ratingSum: Record<string, { sum: number; count: number }> = {};
+      
+      if (preferences.favoriteGenres && preferences.favoriteGenres.length > 0) {
+        console.log('[Recommended] Using onboarding genres:', preferences.favoriteGenres);
+        preferences.favoriteGenres.forEach((genreIndex: number) => {
+          const genre = GENRES[genreIndex];
+          if (genre) {
+            genreCounts[genre] = (genreCounts[genre] || 0) + 5;
+          }
+        });
+      }
       
       for (const interaction of allInteractions.slice(0, 15)) {
         try {
@@ -145,14 +151,6 @@ export default function HomeScreen() {
           show.genres?.forEach((genre: string) => {
             const weight = interaction.type === 'favorite' ? 3 : interaction.type === 'watching' ? 2 : 1;
             genreCounts[genre] = (genreCounts[genre] || 0) + weight;
-            
-            if (interaction.rating) {
-              if (!ratingSum[genre]) {
-                ratingSum[genre] = { sum: 0, count: 0 };
-              }
-              ratingSum[genre].sum += interaction.rating;
-              ratingSum[genre].count += 1;
-            }
           });
         } catch (error) {
           console.error('[Recommended] Error fetching show:', error);
@@ -167,6 +165,8 @@ export default function HomeScreen() {
       if (topGenres.length === 0) {
         return [];
       }
+
+      console.log('[Recommended] Top genres:', topGenres);
 
       const [popularShows, topRatedShows, trendingShows] = await Promise.all([
         getPopular(),
@@ -198,7 +198,7 @@ export default function HomeScreen() {
       console.log('[Recommended] Generated', recommended.length, 'recommendations based on', topGenres.join(', '));
       return recommended;
     },
-    enabled: interactions.length > 0,
+    enabled: true,
   });
 
   const recommendedShows = recommendedQuery.data || [];
