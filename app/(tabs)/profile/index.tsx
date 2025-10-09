@@ -15,14 +15,27 @@ import Colors from '@/constants/colors';
 import GlassPanel from '@/components/GlassPanel';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
+import { trpc } from '@/lib/trpc';
 import { getShowDetails } from '@/services/tvmaze';
 import { TVMazeShow } from '@/types/tvmaze';
 
 export default function ProfileScreen() {
-  const { getStats, getInteractionsByType } = useLibrary();
+  const { getInteractionsByType } = useLibrary();
   const { preferences, updatePreferences } = usePreferences();
   const insets = useSafeAreaInsets();
-  const stats = getStats();
+  const statsQuery = trpc.library.getStats.useQuery();
+  const stats = statsQuery.data || {
+    totalWatched: 0,
+    totalWatchlist: 0,
+    totalFavorites: 0,
+    totalEpisodesWatched: 0,
+    genreDistribution: {},
+    averageRating: 0,
+    monthlyWatchTime: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    lastWatchDate: undefined,
+  };
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
