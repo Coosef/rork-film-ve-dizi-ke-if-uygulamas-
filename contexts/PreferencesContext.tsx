@@ -4,10 +4,25 @@ import { UserPreferences } from '@/types/library';
 import { trpc } from '@/lib/trpc';
 
 export const [PreferencesProvider, usePreferences] = createContextHook(() => {
+  const utils = trpc.useUtils();
   const preferencesQuery = trpc.preferences.get.useQuery();
   const updateMutation = trpc.preferences.update.useMutation({
-    onSuccess: () => {
-      preferencesQuery.refetch();
+    onMutate: async (updates) => {
+      await utils.preferences.get.cancel();
+      const previousData = utils.preferences.get.getData();
+      utils.preferences.get.setData(undefined, (old) => ({
+        ...old!,
+        ...updates,
+      }));
+      return { previousData };
+    },
+    onError: (err, updates, context) => {
+      if (context?.previousData) {
+        utils.preferences.get.setData(undefined, context.previousData);
+      }
+    },
+    onSettled: () => {
+      utils.preferences.get.invalidate();
     },
   });
 
@@ -25,18 +40,13 @@ export const [PreferencesProvider, usePreferences] = createContextHook(() => {
 
   const updatePreferences = useCallback(async (updates: Partial<UserPreferences>) => {
     console.log('[Preferences] Updating:', updates);
-    return new Promise<void>((resolve, reject) => {
-      updateMutation.mutate(updates, {
-        onSuccess: () => {
-          console.log('[Preferences] Update successful');
-          resolve();
-        },
-        onError: (error) => {
-          console.error('[Preferences] Update failed:', error);
-          reject(error);
-        },
-      });
-    });
+    try {
+      await updateMutation.mutateAsync(updates);
+      console.log('[Preferences] Update successful');
+    } catch (error) {
+      console.error('[Preferences] Update failed:', error);
+      throw error;
+    }
   }, [updateMutation]);
 
   const toggleFavoriteGenre = useCallback((genreId: number) => {
