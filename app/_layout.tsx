@@ -5,6 +5,8 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { LibraryProvider } from "@/contexts/LibraryContext";
 import { PreferencesProvider, usePreferences } from "@/contexts/PreferencesContext";
+import { SearchHistoryProvider } from "@/contexts/SearchHistoryContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import Colors from "@/constants/colors";
 import { trpc, trpcClient } from "@/lib/trpc";
 
@@ -59,6 +61,8 @@ function RootLayoutNav() {
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="smart-lists" options={{ headerShown: true, title: 'Akıllı Listeler' }} />
+      <Stack.Screen name="search" options={{ headerShown: false }} />
+      <Stack.Screen name="export-data" options={{ headerShown: true, title: 'Veri Dışa Aktar' }} />
       <Stack.Screen 
         name="movie/[id]" 
         options={{ 
@@ -80,9 +84,13 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <PreferencesProvider>
           <LibraryProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <RootLayoutNav />
-            </GestureHandlerRootView>
+            <SearchHistoryProvider>
+              <NotificationProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <RootLayoutNav />
+                </GestureHandlerRootView>
+              </NotificationProvider>
+            </SearchHistoryProvider>
           </LibraryProvider>
         </PreferencesProvider>
       </QueryClientProvider>
