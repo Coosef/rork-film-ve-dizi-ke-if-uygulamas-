@@ -26,13 +26,17 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   quietHoursEnd: '08:00',
 };
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export const [NotificationProvider, useNotifications] = createContextHook(() => {
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_SETTINGS);
@@ -126,13 +130,14 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
     }
 
     try {
+      const secondsUntilAirDate = Math.max(1, Math.floor((airDate.getTime() - Date.now()) / 1000));
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `${showTitle} - Yeni Bölüm!`,
           body: `${episodeNumber}: ${episodeTitle}`,
           data: { type: 'new_episode', showTitle, episodeTitle },
         },
-        trigger: airDate,
+        trigger: { seconds: secondsUntilAirDate } as Notifications.TimeIntervalTriggerInput,
       });
     } catch (error) {
       console.error('[Notifications] Error scheduling notification:', error);
@@ -154,13 +159,14 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
     }
 
     try {
+      const secondsUntilTrigger = Math.max(1, Math.floor((triggerDate.getTime() - Date.now()) / 1000));
       await Notifications.scheduleNotificationAsync({
         content: {
           title: showTitle,
           body: message,
           data: { type: 'reminder', showTitle },
         },
-        trigger: triggerDate,
+        trigger: { seconds: secondsUntilTrigger } as Notifications.TimeIntervalTriggerInput,
       });
     } catch (error) {
       console.error('[Notifications] Error scheduling reminder:', error);
