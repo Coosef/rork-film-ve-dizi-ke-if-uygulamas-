@@ -40,8 +40,12 @@ export default function OnboardingScreen() {
         favoriteGenres: selectedGenres.map(g => GENRES.indexOf(g)),
         hasCompletedOnboarding: true,
       });
-      console.log('[Onboarding] Preferences saved, navigating to home');
-      router.replace('/(tabs)/(home)');
+      console.log('[Onboarding] Preferences saved successfully');
+      
+      setTimeout(() => {
+        console.log('[Onboarding] Navigating to home');
+        router.replace('/(tabs)/(home)');
+      }, 300);
     } catch (error) {
       console.error('[Onboarding] Failed to save preferences:', error);
     }

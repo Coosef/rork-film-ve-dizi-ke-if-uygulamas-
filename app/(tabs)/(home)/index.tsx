@@ -19,6 +19,7 @@ import Colors from '@/constants/colors';
 import MovieShelf from '@/components/MovieShelf';
 
 import { useLibrary } from '@/contexts/LibraryContext';
+import { usePreferences } from '@/contexts/PreferencesContext';
 import {
   getTrending,
   getPopular,
@@ -35,6 +36,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function HomeScreen() {
   const router = useRouter();
   const { addInteraction, getInteractionsByType, interactions } = useLibrary();
+  const { isLoading: preferencesLoading } = usePreferences();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -219,7 +221,7 @@ export default function HomeScreen() {
   const isSearching = searchQuery.length > 2;
   const searchResults = searchQuery_data.data || [];
 
-  if (trendingQuery.isLoading) {
+  if (trendingQuery.isLoading || preferencesLoading) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>Yükleniyor...</Text>
