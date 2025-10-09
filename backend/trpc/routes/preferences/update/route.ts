@@ -10,6 +10,7 @@ const updatePreferencesSchema = z.object({
   autoPlayTrailers: z.boolean().optional(),
   hapticsEnabled: z.boolean().optional(),
   favoriteGenres: z.array(z.number()).optional(),
+  hasCompletedOnboarding: z.boolean().optional(),
 });
 
 export default publicProcedure
