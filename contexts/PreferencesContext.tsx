@@ -23,9 +23,20 @@ export const [PreferencesProvider, usePreferences] = createContextHook(() => {
   }, [preferencesQuery.data]);
   const isLoading = preferencesQuery.isLoading;
 
-  const updatePreferences = useCallback((updates: Partial<UserPreferences>) => {
+  const updatePreferences = useCallback(async (updates: Partial<UserPreferences>) => {
     console.log('[Preferences] Updating:', updates);
-    updateMutation.mutate(updates);
+    return new Promise<void>((resolve, reject) => {
+      updateMutation.mutate(updates, {
+        onSuccess: () => {
+          console.log('[Preferences] Update successful');
+          resolve();
+        },
+        onError: (error) => {
+          console.error('[Preferences] Update failed:', error);
+          reject(error);
+        },
+      });
+    });
   }, [updateMutation]);
 
   const toggleFavoriteGenre = useCallback((genreId: number) => {

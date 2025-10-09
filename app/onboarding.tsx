@@ -33,12 +33,18 @@ export default function OnboardingScreen() {
     );
   };
 
-  const handleComplete = () => {
-    updatePreferences({ 
-      favoriteGenres: selectedGenres.map(g => GENRES.indexOf(g)),
-      hasCompletedOnboarding: true,
-    });
-    router.replace('/(tabs)/(home)');
+  const handleComplete = async () => {
+    try {
+      console.log('[Onboarding] Completing with genres:', selectedGenres);
+      await updatePreferences({ 
+        favoriteGenres: selectedGenres.map(g => GENRES.indexOf(g)),
+        hasCompletedOnboarding: true,
+      });
+      console.log('[Onboarding] Preferences saved, navigating to home');
+      router.replace('/(tabs)/(home)');
+    } catch (error) {
+      console.error('[Onboarding] Failed to save preferences:', error);
+    }
   };
 
   const canContinue = selectedGenres.length >= 3;
