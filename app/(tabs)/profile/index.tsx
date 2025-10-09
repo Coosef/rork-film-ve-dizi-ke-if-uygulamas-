@@ -117,7 +117,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
-        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <View style={styles.header}>
           <Pressable style={styles.avatarContainer} onPress={() => setShowEditProfileModal(true)}>
             <Text style={styles.avatarText}>🎬</Text>
             <View style={styles.avatarBadge}>
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center' as const,
-    paddingTop: 60,
+    paddingTop: 16,
     paddingBottom: 32,
     paddingHorizontal: 16,
   },
