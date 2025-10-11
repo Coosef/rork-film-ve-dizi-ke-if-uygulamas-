@@ -1,16 +1,18 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Star } from 'lucide-react-native';
+import { Star, Bookmark, BookmarkCheck } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, View, Pressable, Dimensions } from 'react-native';
 import Colors from '@/constants/colors';
 import { MediaItem } from '@/types/tvmaze';
+import { useLibrary } from '@/contexts/LibraryContext';
 
 interface MovieCardProps {
   movie: MediaItem;
   onPress?: () => void;
   width?: number;
   showRating?: boolean;
+  showWatchlistButton?: boolean;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -20,8 +22,20 @@ export default function MovieCard({
   movie, 
   onPress, 
   width = DEFAULT_CARD_WIDTH,
-  showRating = true 
+  showRating = true,
+  showWatchlistButton = true
 }: MovieCardProps) {
+  const { isInWatchlist, addInteraction } = useLibrary();
+  const inWatchlist = isInWatchlist(movie.id, 'tv');
+
+  const handleToggleWatchlist = (e: any) => {
+    e.stopPropagation();
+    if (inWatchlist) {
+      addInteraction(movie.id, 'tv', 'watched');
+    } else {
+      addInteraction(movie.id, 'tv', 'watchlist');
+    }
+  };
   const imageUrl = movie.posterPath || 'https://via.placeholder.com/500x750?text=No+Image';
   const year = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : '';
 
@@ -46,6 +60,18 @@ export default function MovieCard({
             <Star size={12} color={Colors.dark.warning} fill={Colors.dark.warning} />
             <Text style={styles.ratingText}>{movie.voteAverage.toFixed(1)}</Text>
           </View>
+        )}
+        {showWatchlistButton && (
+          <Pressable 
+            style={[styles.watchlistButton, inWatchlist && styles.watchlistButtonActive]} 
+            onPress={handleToggleWatchlist}
+          >
+            {inWatchlist ? (
+              <BookmarkCheck size={16} color={Colors.dark.text} />
+            ) : (
+              <Bookmark size={16} color={Colors.dark.text} />
+            )}
+          </Pressable>
         )}
       </View>
       <View style={styles.info}>
@@ -107,5 +133,22 @@ const styles = StyleSheet.create({
   year: {
     color: Colors.dark.textSecondary,
     fontSize: 12,
+  },
+  watchlistButton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  watchlistButtonActive: {
+    backgroundColor: Colors.dark.primary,
+    borderColor: Colors.dark.primary,
   },
 });

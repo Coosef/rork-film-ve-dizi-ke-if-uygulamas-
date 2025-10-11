@@ -147,7 +147,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <Pressable onPress={() => setShowStatsModal(true)}>
+        <Pressable onPress={() => router.push('/stats')}>
           <View style={styles.statsGrid}>
             {statCards.map((stat, index) => (
               <GlassPanel key={index} style={styles.statCard}>
