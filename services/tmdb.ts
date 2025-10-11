@@ -4,19 +4,7 @@ const TMDB_API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY || '';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
-console.log('[TMDB] ========== ENVIRONMENT CHECK ==========');
-console.log('[TMDB] - EXPO_PUBLIC_TMDB_API_KEY exists:', !!process.env.EXPO_PUBLIC_TMDB_API_KEY);
-console.log('[TMDB] - API Key value:', TMDB_API_KEY);
-console.log('[TMDB] - API Key length:', TMDB_API_KEY.length);
-console.log('[TMDB] - First 10 chars:', TMDB_API_KEY.substring(0, 10));
-console.log('[TMDB] - Expected: 1eba065b82');
-console.log('[TMDB] ==========================================');
 
-if (!TMDB_API_KEY || TMDB_API_KEY.length === 0) {
-  console.error('[TMDB] CRITICAL: TMDB_API_KEY is not set or empty!');
-  console.error('[TMDB] Make sure .env file has: EXPO_PUBLIC_TMDB_API_KEY=1eba065b82fe74a042e8300ae65ab6c1');
-  console.error('[TMDB] You may need to restart the dev server after changing .env');
-}
 
 export const getImageUrl = (path: string | null, size: 'w200' | 'w500' | 'w780' | 'original' = 'w500'): string => {
   if (!path) return 'https://via.placeholder.com/500x750?text=No+Image';
