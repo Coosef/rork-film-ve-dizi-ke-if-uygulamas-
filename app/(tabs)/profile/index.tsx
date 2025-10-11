@@ -11,6 +11,8 @@ import {
   Switch,
   Modal,
   Image,
+  Share,
+  Alert,
 } from 'react-native';
 import Colors from '@/constants/colors';
 import GlassPanel from '@/components/GlassPanel';
@@ -112,6 +114,24 @@ export default function ProfileScreen() {
   const totalShows = stats.totalWatched + stats.totalWatchlist + stats.totalFavorites;
   const watchedPercentage = totalShows > 0 ? (stats.totalWatched / totalShows * 100).toFixed(0) : 0;
 
+  const handleShare = async () => {
+    try {
+      const message = `🎬 Cinematch'te ${stats.totalWatched} dizi izledim!\n⭐ Ortalama puanım: ${stats.averageRating.toFixed(1)}\n🔥 Güncel serim: ${stats.currentStreak} gün\n\nSen de katıl ve dizi keşfetmeye başla!`;
+      
+      const result = await Share.share({
+        message,
+        title: 'Cinematch İstatistiklerim',
+      });
+
+      if (result.action === Share.sharedAction) {
+        console.log('[Profile] Shared successfully');
+      }
+    } catch (error) {
+      console.error('[Profile] Error sharing:', error);
+      Alert.alert('Hata', 'Paylaşım sırasında bir hata oluştu');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView 
@@ -140,7 +160,7 @@ export default function ProfileScreen() {
               <Users size={20} color={Colors.dark.text} />
               <Text style={styles.socialButtonText}>Arkadaşlar</Text>
             </Pressable>
-            <Pressable style={styles.socialButton}>
+            <Pressable style={styles.socialButton} onPress={handleShare}>
               <Share2 size={20} color={Colors.dark.text} />
               <Text style={styles.socialButtonText}>Paylaş</Text>
             </Pressable>

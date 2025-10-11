@@ -43,6 +43,9 @@ export default function DiscoverScreen() {
   const [swipedCards, setSwipedCards] = useState<{ index: number; direction: 'left' | 'right' }[]>([]);
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [showGenreModal, setShowGenreModal] = useState(false);
+  const [minRating, setMinRating] = useState<number>(0);
+  const [minYear, setMinYear] = useState<number>(1900);
+  const [maxYear, setMaxYear] = useState<number>(new Date().getFullYear());
   const [page, setPage] = useState(1);
   const [allMovies, setAllMovies] = useState<MediaItem[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -53,7 +56,7 @@ export default function DiscoverScreen() {
   const isGestureActive = useSharedValue(false);
 
   const discoverQuery = useQuery({
-    queryKey: ['discover', page, selectedGenre],
+    queryKey: ['discover', page, selectedGenre, minRating, minYear, maxYear],
     queryFn: () => selectedGenre ? getShowsByGenre(selectedGenre, page).then(shows => shows.map(show => ({
       id: show.id,
       type: 'tv' as const,
@@ -65,7 +68,13 @@ export default function DiscoverScreen() {
       voteAverage: show.rating.average || 0,
       voteCount: show.weight,
       genres: show.genres,
-    }))) : getDiscoverStack(page),
+    })).filter(show => {
+      const year = show.releaseDate ? new Date(show.releaseDate).getFullYear() : 0;
+      return show.voteAverage >= minRating && year >= minYear && year <= maxYear;
+    })) : getDiscoverStack(page).then(shows => shows.filter(show => {
+      const year = show.releaseDate ? new Date(show.releaseDate).getFullYear() : 0;
+      return show.voteAverage >= minRating && year >= minYear && year <= maxYear;
+    })),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 15,
   });
@@ -280,6 +289,19 @@ export default function DiscoverScreen() {
     setShowGenreModal(false);
   };
 
+  const clearAllFilters = () => {
+    setSelectedGenre(null);
+    setMinRating(0);
+    setMinYear(1900);
+    setMaxYear(new Date().getFullYear());
+    setCurrentIndex(0);
+    setSwipedCards([]);
+    setAllMovies([]);
+    setPage(1);
+  };
+
+  const hasActiveFilters = selectedGenre !== null || minRating > 0 || minYear > 1900 || maxYear < new Date().getFullYear();
+
   if (discoverQuery.isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -316,22 +338,43 @@ export default function DiscoverScreen() {
           </View>
           <View style={styles.headerActions}>
             <Pressable 
-              style={[styles.filterButton, selectedGenre && styles.filterButtonActive]}
+              style={[styles.filterButton, hasActiveFilters && styles.filterButtonActive]}
               onPress={() => setShowGenreModal(true)}
             >
               <Filter size={20} color={Colors.dark.primary} />
-              {selectedGenre && <View style={styles.filterDot} />}
+              {hasActiveFilters && <View style={styles.filterDot} />}
             </Pressable>
           </View>
         </View>
-        {selectedGenre && (
+        {hasActiveFilters && (
           <View style={styles.tagsContainer}>
-            <View style={styles.genreTag}>
-              <Text style={styles.genreTagText}>{selectedGenre}</Text>
-              <Pressable onPress={() => handleGenreSelect(selectedGenre)}>
-                <X size={16} color={Colors.dark.text} />
-              </Pressable>
-            </View>
+            {selectedGenre && (
+              <View style={styles.genreTag}>
+                <Text style={styles.genreTagText}>{selectedGenre}</Text>
+                <Pressable onPress={() => setSelectedGenre(null)}>
+                  <X size={16} color={Colors.dark.text} />
+                </Pressable>
+              </View>
+            )}
+            {minRating > 0 && (
+              <View style={styles.genreTag}>
+                <Text style={styles.genreTagText}>⭐ {minRating}+</Text>
+                <Pressable onPress={() => setMinRating(0)}>
+                  <X size={16} color={Colors.dark.text} />
+                </Pressable>
+              </View>
+            )}
+            {(minYear > 1900 || maxYear < new Date().getFullYear()) && (
+              <View style={styles.genreTag}>
+                <Text style={styles.genreTagText}>{minYear}-{maxYear}</Text>
+                <Pressable onPress={() => { setMinYear(1900); setMaxYear(new Date().getFullYear()); }}>
+                  <X size={16} color={Colors.dark.text} />
+                </Pressable>
+              </View>
+            )}
+            <Pressable style={styles.clearAllButton} onPress={clearAllFilters}>
+              <Text style={styles.clearAllText}>Tümünü Temizle</Text>
+            </Pressable>
           </View>
         )}
       </View>
@@ -473,26 +516,116 @@ export default function DiscoverScreen() {
                 </Pressable>
               </View>
               <ScrollView style={styles.genreList} showsVerticalScrollIndicator={false}>
-                <View style={styles.genreGrid}>
-                  {GENRES.map(genre => (
-                    <Pressable
-                      key={genre}
-                      style={[
-                        styles.genreItem,
-                        selectedGenre === genre && styles.genreItemActive,
-                      ]}
-                      onPress={() => handleGenreSelect(genre)}
-                    >
-                      <Text
+                <View style={styles.filterSectionContainer}>
+                  <Text style={styles.filterSectionTitle}>Tür</Text>
+                  <View style={styles.genreGrid}>
+                    {GENRES.map(genre => (
+                      <Pressable
+                        key={genre}
                         style={[
-                          styles.genreItemText,
-                          selectedGenre === genre && styles.genreItemTextActive,
+                          styles.genreItem,
+                          selectedGenre === genre && styles.genreItemActive,
                         ]}
+                        onPress={() => handleGenreSelect(genre)}
                       >
-                        {genre}
-                      </Text>
+                        <Text
+                          style={[
+                            styles.genreItemText,
+                            selectedGenre === genre && styles.genreItemTextActive,
+                          ]}
+                        >
+                          {genre}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.filterSectionContainer}>
+                  <Text style={styles.filterSectionTitle}>Minimum Puan</Text>
+                  <View style={styles.ratingGrid}>
+                    {[0, 5, 6, 7, 8, 9].map(rating => (
+                      <Pressable
+                        key={rating}
+                        style={[
+                          styles.ratingItem,
+                          minRating === rating && styles.ratingItemActive,
+                        ]}
+                        onPress={() => setMinRating(rating)}
+                      >
+                        <Text
+                          style={[
+                            styles.ratingItemText,
+                            minRating === rating && styles.ratingItemTextActive,
+                          ]}
+                        >
+                          {rating === 0 ? 'Tümü' : `⭐ ${rating}+`}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.filterSectionContainer}>
+                  <Text style={styles.filterSectionTitle}>Yıl Aralığı</Text>
+                  <View style={styles.yearContainer}>
+                    <View style={styles.yearInputContainer}>
+                      <Text style={styles.yearLabel}>Başlangıç</Text>
+                      <View style={styles.yearButtons}>
+                        <Pressable 
+                          style={styles.yearButton}
+                          onPress={() => setMinYear(Math.max(1900, minYear - 10))}
+                        >
+                          <Text style={styles.yearButtonText}>-10</Text>
+                        </Pressable>
+                        <Text style={styles.yearValue}>{minYear}</Text>
+                        <Pressable 
+                          style={styles.yearButton}
+                          onPress={() => setMinYear(Math.min(maxYear, minYear + 10))}
+                        >
+                          <Text style={styles.yearButtonText}>+10</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                    <View style={styles.yearInputContainer}>
+                      <Text style={styles.yearLabel}>Bitiş</Text>
+                      <View style={styles.yearButtons}>
+                        <Pressable 
+                          style={styles.yearButton}
+                          onPress={() => setMaxYear(Math.max(minYear, maxYear - 10))}
+                        >
+                          <Text style={styles.yearButtonText}>-10</Text>
+                        </Pressable>
+                        <Text style={styles.yearValue}>{maxYear}</Text>
+                        <Pressable 
+                          style={styles.yearButton}
+                          onPress={() => setMaxYear(Math.min(new Date().getFullYear(), maxYear + 10))}
+                        >
+                          <Text style={styles.yearButtonText}>+10</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.yearPresets}>
+                    <Pressable 
+                      style={styles.yearPreset}
+                      onPress={() => { setMinYear(2020); setMaxYear(new Date().getFullYear()); }}
+                    >
+                      <Text style={styles.yearPresetText}>Son 5 Yıl</Text>
                     </Pressable>
-                  ))}
+                    <Pressable 
+                      style={styles.yearPreset}
+                      onPress={() => { setMinYear(2010); setMaxYear(new Date().getFullYear()); }}
+                    >
+                      <Text style={styles.yearPresetText}>Son 10 Yıl</Text>
+                    </Pressable>
+                    <Pressable 
+                      style={styles.yearPreset}
+                      onPress={() => { setMinYear(1900); setMaxYear(new Date().getFullYear()); }}
+                    >
+                      <Text style={styles.yearPresetText}>Tümü</Text>
+                    </Pressable>
+                  </View>
                 </View>
               </ScrollView>
             </View>
@@ -798,5 +931,113 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 12,
     width: '100%',
+    paddingHorizontal: 16,
+  },
+  clearAllButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.surfaceLight,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  clearAllText: {
+    color: Colors.dark.textSecondary,
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  filterSectionContainer: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.dark.border,
+  },
+  filterSectionTitle: {
+    color: Colors.dark.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 12,
+  },
+  ratingGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  ratingItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: Colors.dark.surfaceLight,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  ratingItemActive: {
+    backgroundColor: Colors.dark.primary,
+    borderColor: Colors.dark.primary,
+  },
+  ratingItemText: {
+    color: Colors.dark.textSecondary,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  ratingItemTextActive: {
+    color: Colors.dark.text,
+  },
+  yearContainer: {
+    gap: 16,
+  },
+  yearInputContainer: {
+    gap: 8,
+  },
+  yearLabel: {
+    color: Colors.dark.textSecondary,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  yearButtons: {
+    flexDirection: 'row',
+    alignItems: 'center' as const,
+    gap: 12,
+    backgroundColor: Colors.dark.surfaceLight,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  yearButton: {
+    backgroundColor: Colors.dark.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  yearButtonText: {
+    color: Colors.dark.text,
+    fontSize: 14,
+    fontWeight: '700' as const,
+  },
+  yearValue: {
+    flex: 1,
+    color: Colors.dark.text,
+    fontSize: 18,
+    fontWeight: '700' as const,
+    textAlign: 'center' as const,
+  },
+  yearPresets: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  yearPreset: {
+    flex: 1,
+    backgroundColor: Colors.dark.surfaceLight,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  yearPresetText: {
+    color: Colors.dark.textSecondary,
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
 });
