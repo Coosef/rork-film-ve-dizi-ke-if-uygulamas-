@@ -156,7 +156,7 @@ export default function ProfileScreen() {
             <Text style={styles.subtitle}>{bio}</Text>
           </View>
           <View style={styles.socialActions}>
-            <Pressable style={styles.socialButton} onPress={() => setShowSocialModal(true)}>
+            <Pressable style={styles.socialButton} onPress={() => router.push('/social')}>
               <Users size={20} color={Colors.dark.text} />
               <Text style={styles.socialButtonText}>Arkadaşlar</Text>
             </Pressable>

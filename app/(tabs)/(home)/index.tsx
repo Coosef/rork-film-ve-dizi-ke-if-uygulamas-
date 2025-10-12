@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Play, Plus, Info, Search, Clock } from 'lucide-react-native';
+import { Play, Plus, Info, Search, Clock, Sparkles } from 'lucide-react-native';
 import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
@@ -29,8 +29,10 @@ import {
   searchShows,
   getNewReleases,
   GENRES,
+  getShowDetails,
 } from '@/services/tvmaze';
 import { MediaItem } from '@/types/tvmaze';
+import { getAIRecommendations } from '@/services/ai-recommendations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -120,8 +122,10 @@ export default function HomeScreen() {
 
   const continueWatchingShows = continueWatchingQuery.data || [];
 
+  const [useAIRecommendations, setUseAIRecommendations] = useState(true);
+
   const recommendedQuery = useQuery({
-    queryKey: ['recommended', interactions.map(i => i.mediaId).join(','), preferences.favoriteGenres?.join(',') || ''],
+    queryKey: ['recommended', interactions.map(i => i.mediaId).join(','), preferences.favoriteGenres?.join(',') || '', useAIRecommendations],
     staleTime: 1000 * 60 * 60 * 1,
     gcTime: 1000 * 60 * 60 * 6,
     queryFn: async () => {
@@ -130,6 +134,52 @@ export default function HomeScreen() {
       const watchingInteractions = getInteractionsByType('watching');
       const allInteractions = [...favoriteInteractions, ...watchedInteractions, ...watchingInteractions];
       
+      if (useAIRecommendations && allInteractions.length >= 3) {
+        console.log('[Recommended] Using AI recommendations');
+        try {
+          const [popularShows, topRatedShows, trendingShows] = await Promise.all([
+            getPopular(),
+            getTopRated(),
+            getTrending(),
+          ]);
+          
+          const allShows = [...popularShows, ...topRatedShows, ...trendingShows];
+          const uniqueShows = Array.from(new Map(allShows.map(show => [show.id, show])).values());
+          
+          const recentlyWatchedShows = await Promise.all(
+            allInteractions.slice(0, 5).map(i => getShowDetails(i.mediaId).catch(() => null))
+          );
+          const validRecentShows = recentlyWatchedShows.filter(Boolean);
+          
+          const aiRecommendations = await getAIRecommendations({
+            userInteractions: allInteractions,
+            availableShows: uniqueShows,
+            favoriteGenres: preferences.favoriteGenres,
+            recentlyWatched: validRecentShows as any[],
+          });
+          
+          const recommendedShows = aiRecommendations
+            .map(rec => {
+              const show = uniqueShows.find(s => s.id === rec.showId);
+              if (!show) return null;
+              return {
+                ...show,
+                recommendationScore: rec.score,
+                aiReason: rec.reason,
+                matchedPreferences: rec.matchedPreferences,
+              };
+            })
+            .filter(Boolean)
+            .slice(0, 20);
+          
+          console.log('[Recommended] AI generated', recommendedShows.length, 'recommendations');
+          return recommendedShows;
+        } catch (error) {
+          console.error('[Recommended] AI error, falling back to genre-based:', error);
+        }
+      }
+      
+      console.log('[Recommended] Using genre-based recommendations');
       const genreCounts: Record<string, number> = {};
       
       if (preferences.favoriteGenres && preferences.favoriteGenres.length > 0) {
@@ -402,11 +452,34 @@ export default function HomeScreen() {
 
         <View style={styles.shelvesContainer}>
           {recommendedShows.length > 0 && (
-            <MovieShelf
-              title="Sizin İçin Öneriler"
-              movies={recommendedShows.map(convertShowToMediaItem)}
-              onMoviePress={handleShowPress}
-            />
+            <View>
+              <View style={styles.shelfHeader}>
+                <View style={styles.shelfTitleContainer}>
+                  <Sparkles size={20} color={Colors.dark.primary} />
+                  <Text style={styles.shelfTitle}>Sizin İçin Öneriler</Text>
+                  {useAIRecommendations && interactions.length >= 3 && (
+                    <View style={styles.aiPoweredBadge}>
+                      <Text style={styles.aiPoweredText}>AI</Text>
+                    </View>
+                  )}
+                </View>
+                {interactions.length >= 3 && (
+                  <Pressable 
+                    style={styles.toggleAIButton}
+                    onPress={() => setUseAIRecommendations(!useAIRecommendations)}
+                  >
+                    <Text style={styles.toggleAIText}>
+                      {useAIRecommendations ? 'Klasik' : 'AI'}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+              <MovieShelf
+                title=""
+                movies={recommendedShows.filter(Boolean).map((show: any) => convertShowToMediaItem(show))}
+                onMoviePress={handleShowPress}
+              />
+            </View>
           )}
           {newReleasesQuery.data && newReleasesQuery.data.length > 0 && (
             <MovieShelf
@@ -530,6 +603,47 @@ const styles = StyleSheet.create({
   },
   shelvesContainer: {
     paddingVertical: 24,
+  },
+  shelfHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center' as const,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  shelfTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center' as const,
+    gap: 8,
+  },
+  shelfTitle: {
+    color: Colors.dark.text,
+    fontSize: 20,
+    fontWeight: '700' as const,
+  },
+  aiPoweredBadge: {
+    backgroundColor: Colors.dark.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  aiPoweredText: {
+    color: Colors.dark.text,
+    fontSize: 10,
+    fontWeight: '700' as const,
+  },
+  toggleAIButton: {
+    backgroundColor: Colors.dark.surfaceLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  toggleAIText: {
+    color: Colors.dark.text,
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   searchContainer: {
     paddingHorizontal: 16,
