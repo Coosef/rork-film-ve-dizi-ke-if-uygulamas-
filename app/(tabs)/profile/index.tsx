@@ -421,7 +421,7 @@ export default function ProfileScreen() {
           <GlassPanel style={styles.featureCard}>
             <Pressable 
               style={styles.featureItem}
-              onPress={() => router.push('/watch-party')}
+              onPress={() => router.push('/watch-party?title=Breaking Bad&id=169')}
             >
               <Text style={styles.featureBullet}>🎥</Text>
               <Text style={styles.featureText}>Watch Party - Arkadaşlarınla birlikte izle</Text>
