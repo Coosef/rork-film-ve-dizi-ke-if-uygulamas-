@@ -1,19 +1,33 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import { Interaction, InteractionType, LibraryStats, WatchProgress, Review } from '@/types/library';
 import { MediaType } from '@/types/tvmaze';
 import { trpc } from '@/lib/trpc';
 
 export const [LibraryProvider, useLibrary] = createContextHook(() => {
   const getAllQuery = trpc.library.getAll.useQuery();
+  
+  useEffect(() => {
+    if (getAllQuery.error) {
+      console.error('[LibraryContext] Failed to fetch library:', getAllQuery.error);
+    }
+  }, [getAllQuery.error]);
   const addMutation = trpc.library.add.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[LibraryContext] Add mutation success:', data);
       getAllQuery.refetch();
+    },
+    onError: (error) => {
+      console.error('[LibraryContext] Add mutation failed:', error);
     },
   });
   const removeMutation = trpc.library.remove.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[LibraryContext] Remove mutation success:', data);
       getAllQuery.refetch();
+    },
+    onError: (error) => {
+      console.error('[LibraryContext] Remove mutation failed:', error);
     },
   });
 

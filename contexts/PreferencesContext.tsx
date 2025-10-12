@@ -1,11 +1,17 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect } from 'react';
 import { UserPreferences } from '@/types/library';
 import { trpc } from '@/lib/trpc';
 
 export const [PreferencesProvider, usePreferences] = createContextHook(() => {
   const utils = trpc.useUtils();
   const preferencesQuery = trpc.preferences.get.useQuery();
+  
+  useEffect(() => {
+    if (preferencesQuery.error) {
+      console.error('[PreferencesContext] Failed to fetch preferences:', preferencesQuery.error);
+    }
+  }, [preferencesQuery.error]);
   const updateMutation = trpc.preferences.update.useMutation({
     onMutate: async (updates) => {
       await utils.preferences.get.cancel();
@@ -17,6 +23,7 @@ export const [PreferencesProvider, usePreferences] = createContextHook(() => {
       return { previousData };
     },
     onError: (err, updates, context) => {
+      console.error('[PreferencesContext] Update mutation failed:', err);
       if (context?.previousData) {
         utils.preferences.get.setData(undefined, context.previousData);
       }

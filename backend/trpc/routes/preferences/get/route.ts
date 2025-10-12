@@ -14,6 +14,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 let userPreferences: UserPreferences = { ...DEFAULT_PREFERENCES };
 
 export default publicProcedure.query(() => {
+  console.log('[Backend] getPreferences called, returning:', userPreferences);
   return userPreferences;
 });
 

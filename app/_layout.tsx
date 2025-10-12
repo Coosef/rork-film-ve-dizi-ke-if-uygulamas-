@@ -36,8 +36,13 @@ function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
 
+  console.log('[RootLayoutNav] Render - isLoading:', isLoading, 'preferences:', preferences);
+
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading) {
+      console.log('[RootLayout] Still loading preferences...');
+      return;
+    }
 
     const inOnboarding = segments[0] === 'onboarding';
     const hasCompletedOnboarding = preferences.hasCompletedOnboarding;

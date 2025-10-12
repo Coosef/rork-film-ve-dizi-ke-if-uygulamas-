@@ -3,6 +3,7 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 
 export const createContext = async (opts: FetchCreateContextFnOptions) => {
+  console.log('[tRPC Context] Creating context for request:', opts.req.url);
   return {
     req: opts.req,
   };
