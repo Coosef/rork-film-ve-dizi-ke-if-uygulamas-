@@ -1,5 +1,5 @@
 import { createTRPCReact } from "@trpc/react-query";
-import { httpLink } from "@trpc/client";
+import { httpBatchLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
 
@@ -12,40 +12,36 @@ const getBaseUrl = () => {
     return origin;
   }
   
-  const baseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
-  console.log('[tRPC Client] Base URL from env:', baseUrl);
-  
-  if (!baseUrl) {
-    console.warn('[tRPC Client] No base URL found, using fallback');
-    return 'http://localhost:8081';
-  }
-  
-  return baseUrl;
+  console.log('[tRPC Client] Not in browser, using localhost');
+  return 'http://localhost:8081';
 };
 
 export const trpcClient = trpc.createClient({
   links: [
-    httpLink({
+    httpBatchLink({
       url: `${getBaseUrl()}/api/trpc`,
       transformer: superjson,
-      fetch(url, options) {
+      async fetch(url, options) {
         console.log('[tRPC Client] Request:', url);
-        return fetch(url, {
-          ...options,
-          headers: {
-            ...options?.headers,
-            'Content-Type': 'application/json',
-          },
-        }).then(res => {
+        try {
+          const res = await fetch(url, {
+            ...options,
+            headers: {
+              ...options?.headers,
+              'Content-Type': 'application/json',
+            },
+          });
           console.log('[tRPC Client] Response status:', res.status);
+          
           if (!res.ok) {
-            console.error('[tRPC Client] Response not OK:', res.status, res.statusText);
+            const text = await res.text();
+            console.error('[tRPC Client] Response not OK:', res.status, res.statusText, text);
           }
           return res;
-        }).catch(err => {
+        } catch (err: any) {
           console.error('[tRPC Client] Fetch error:', err.message || err);
           throw err;
-        });
+        }
       },
     }),
   ],

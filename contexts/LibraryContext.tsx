@@ -6,10 +6,11 @@ import { trpc } from '@/lib/trpc';
 
 export const [LibraryProvider, useLibrary] = createContextHook(() => {
   const getAllQuery = trpc.library.getAll.useQuery(undefined, {
-    retry: 1,
+    retry: 0,
     retryDelay: 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    enabled: true,
   });
   
   useEffect(() => {
@@ -17,7 +18,10 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
       console.error('[LibraryContext] Failed to fetch library:', getAllQuery.error);
       console.log('[LibraryContext] Using empty library');
     }
-  }, [getAllQuery.error]);
+    if (getAllQuery.isSuccess) {
+      console.log('[LibraryContext] Successfully fetched library:', getAllQuery.data?.length || 0, 'items');
+    }
+  }, [getAllQuery.error, getAllQuery.isSuccess, getAllQuery.data]);
   const addMutation = trpc.library.add.useMutation({
     onSuccess: (data) => {
       console.log('[LibraryContext] Add mutation success:', data);

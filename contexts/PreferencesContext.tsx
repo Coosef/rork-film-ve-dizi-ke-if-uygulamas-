@@ -17,10 +17,11 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 export const [PreferencesProvider, usePreferences] = createContextHook(() => {
   const utils = trpc.useUtils();
   const preferencesQuery = trpc.preferences.get.useQuery(undefined, {
-    retry: 1,
+    retry: 0,
     retryDelay: 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    enabled: true,
   });
   
   useEffect(() => {
@@ -28,7 +29,10 @@ export const [PreferencesProvider, usePreferences] = createContextHook(() => {
       console.error('[PreferencesContext] Failed to fetch preferences:', preferencesQuery.error);
       console.log('[PreferencesContext] Using default preferences');
     }
-  }, [preferencesQuery.error]);
+    if (preferencesQuery.isSuccess) {
+      console.log('[PreferencesContext] Successfully fetched preferences:', preferencesQuery.data);
+    }
+  }, [preferencesQuery.error, preferencesQuery.isSuccess, preferencesQuery.data]);
   const updateMutation = trpc.preferences.update.useMutation({
     onMutate: async (updates) => {
       await utils.preferences.get.cancel();
