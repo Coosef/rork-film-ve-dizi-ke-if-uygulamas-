@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { Language, translations, TranslationKeys } from '@/locales';
-import { usePreferences } from './PreferencesContext';
+import { trpc } from '@/lib/trpc';
 
 type TranslationPath<T> = T extends object
   ? {
@@ -16,8 +16,21 @@ type TranslationPath<T> = T extends object
 type TranslationKey = TranslationPath<TranslationKeys>;
 
 export const [LanguageProvider, useLanguage] = createContextHook(() => {
-  const { preferences, updatePreferences } = usePreferences();
-  const currentLanguage = (preferences.uiLanguage || 'tr') as Language;
+  const utils = trpc.useUtils();
+  const preferencesQuery = trpc.preferences.get.useQuery();
+  const updateMutation = trpc.preferences.update.useMutation({
+    onSuccess: () => {
+      utils.preferences.get.invalidate();
+    },
+  });
+
+  const [currentLanguage, setCurrentLanguage] = useState<Language>('tr');
+
+  useEffect(() => {
+    if (preferencesQuery.data?.uiLanguage) {
+      setCurrentLanguage(preferencesQuery.data.uiLanguage as Language);
+    }
+  }, [preferencesQuery.data?.uiLanguage]);
 
   const t = useCallback(
     (key: TranslationKey): string => {
@@ -41,9 +54,10 @@ export const [LanguageProvider, useLanguage] = createContextHook(() => {
   const changeLanguage = useCallback(
     async (language: Language) => {
       console.log('[Language] Changing language to:', language);
-      await updatePreferences({ uiLanguage: language });
+      setCurrentLanguage(language);
+      await updateMutation.mutateAsync({ uiLanguage: language });
     },
-    [updatePreferences]
+    [updateMutation]
   );
 
   return useMemo(
