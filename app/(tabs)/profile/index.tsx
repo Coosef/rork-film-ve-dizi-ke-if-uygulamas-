@@ -428,22 +428,32 @@ export default function ProfileScreen() {
               <ChevronRight size={20} color={Colors.dark.primary} />
             </Pressable>
             <View style={styles.settingDivider} />
-            <View style={styles.featureItem}>
-              <Text style={styles.featureBullet}>🎯</Text>
-              <Text style={styles.featureText}>Kişiselleştirilmiş dizi önerileri</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureBullet}>💫</Text>
-              <Text style={styles.featureText}>Tinder tarzı kaydırma deneyimi</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureBullet}>📚</Text>
-              <Text style={styles.featureText}>Kişisel dizi kütüphanesi</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureBullet}>🎬</Text>
-              <Text style={styles.featureText}>Detaylı dizi bilgileri</Text>
-            </View>
+            <Pressable 
+              style={styles.featureItem}
+              onPress={() => router.push('/smart-lists')}
+            >
+              <Text style={styles.featureBullet}>✨</Text>
+              <Text style={styles.featureText}>Akıllı Listeler - Özel öneriler</Text>
+              <ChevronRight size={20} color={Colors.dark.primary} />
+            </Pressable>
+            <View style={styles.settingDivider} />
+            <Pressable 
+              style={styles.featureItem}
+              onPress={() => router.push('/export-data')}
+            >
+              <Text style={styles.featureBullet}>💾</Text>
+              <Text style={styles.featureText}>Veri Dışa Aktar - Yedekle</Text>
+              <ChevronRight size={20} color={Colors.dark.primary} />
+            </Pressable>
+            <View style={styles.settingDivider} />
+            <Pressable 
+              style={styles.featureItem}
+              onPress={() => router.push('/notification-settings')}
+            >
+              <Text style={styles.featureBullet}>🔔</Text>
+              <Text style={styles.featureText}>Bildirim Ayarları</Text>
+              <ChevronRight size={20} color={Colors.dark.primary} />
+            </Pressable>
           </GlassPanel>
         </View>
       </ScrollView>
@@ -601,22 +611,20 @@ export default function ProfileScreen() {
               <View style={styles.settingsSection}>
                 <Text style={styles.settingsSectionTitle}>Bildirimler</Text>
                 <GlassPanel style={styles.settingsCard}>
-                  <Pressable style={styles.settingItem}>
+                  <Pressable 
+                    style={styles.settingItem}
+                    onPress={() => {
+                      setShowSettingsModal(false);
+                      setTimeout(() => {
+                        router.push('/notification-settings');
+                      }, 300);
+                    }}
+                  >
                     <View style={styles.settingLeft}>
                       <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.warning}20` }]}>
                         <Bell size={20} color={Colors.dark.warning} />
                       </View>
-                      <Text style={styles.settingText}>Yeni Bölümler</Text>
-                    </View>
-                    <ChevronRight size={20} color={Colors.dark.textSecondary} />
-                  </Pressable>
-                  <View style={styles.settingDivider} />
-                  <Pressable style={styles.settingItem}>
-                    <View style={styles.settingLeft}>
-                      <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.success}20` }]}>
-                        <TrendingUp size={20} color={Colors.dark.success} />
-                      </View>
-                      <Text style={styles.settingText}>Öneriler</Text>
+                      <Text style={styles.settingText}>Bildirim Ayarları</Text>
                     </View>
                     <ChevronRight size={20} color={Colors.dark.textSecondary} />
                   </Pressable>
