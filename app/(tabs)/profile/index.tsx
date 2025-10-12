@@ -419,6 +419,15 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Özellikler</Text>
           <GlassPanel style={styles.featureCard}>
+            <Pressable 
+              style={styles.featureItem}
+              onPress={() => router.push('/watch-party')}
+            >
+              <Text style={styles.featureBullet}>🎥</Text>
+              <Text style={styles.featureText}>Watch Party - Arkadaşlarınla birlikte izle</Text>
+              <ChevronRight size={20} color={Colors.dark.primary} />
+            </Pressable>
+            <View style={styles.settingDivider} />
             <View style={styles.featureItem}>
               <Text style={styles.featureBullet}>🎯</Text>
               <Text style={styles.featureText}>Kişiselleştirilmiş dizi önerileri</Text>
