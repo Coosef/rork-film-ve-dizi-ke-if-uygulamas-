@@ -18,6 +18,8 @@ import Colors from '@/constants/colors';
 import GlassPanel from '@/components/GlassPanel';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageSelector from '@/components/LanguageSelector';
 import { trpc } from '@/lib/trpc';
 import { getShowDetails } from '@/services/tvmaze';
 import { TVMazeShow } from '@/types/tvmaze';
@@ -44,6 +46,7 @@ export default function ProfileScreen() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [username, setUsername] = useState('Film Sever');
   const [bio, setBio] = useState('Sinema tutkunu');
   const [recentShows, setRecentShows] = useState<Array<{ show: TVMazeShow; interaction: any }>>([]);
@@ -596,14 +599,22 @@ export default function ProfileScreen() {
                     <Text style={styles.settingValue}>Karanlık</Text>
                   </Pressable>
                   <View style={styles.settingDivider} />
-                  <Pressable style={styles.settingItem}>
+                  <Pressable 
+                    style={styles.settingItem}
+                    onPress={() => {
+                      setShowSettingsModal(false);
+                      setTimeout(() => {
+                        setShowLanguageModal(true);
+                      }, 300);
+                    }}
+                  >
                     <View style={styles.settingLeft}>
                       <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.accent}20` }]}>
                         <Globe size={20} color={Colors.dark.accent} />
                       </View>
                       <Text style={styles.settingText}>Dil</Text>
                     </View>
-                    <Text style={styles.settingValue}>Türkçe</Text>
+                    <ChevronRight size={20} color={Colors.dark.textSecondary} />
                   </Pressable>
                 </GlassPanel>
               </View>
@@ -782,6 +793,28 @@ export default function ProfileScreen() {
                 ))}
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showLanguageModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLanguageModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowLanguageModal(false)} />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Dil Seçin</Text>
+              <Pressable onPress={() => setShowLanguageModal(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </Pressable>
+            </View>
+            <View style={styles.modalBody}>
+              <LanguageSelector />
+            </View>
           </View>
         </View>
       </Modal>
