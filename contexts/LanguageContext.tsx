@@ -18,12 +18,17 @@ type TranslationKey = TranslationPath<TranslationKeys>;
 export const [LanguageProvider, useLanguage] = createContextHook(() => {
   const utils = trpc.useUtils();
   const preferencesQuery = trpc.preferences.get.useQuery(undefined, {
-    retry: false,
+    retry: 1,
+    retryDelay: 1000,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
   const updateMutation = trpc.preferences.update.useMutation({
     onSuccess: () => {
       utils.preferences.get.invalidate();
+    },
+    onError: (error) => {
+      console.error('[LanguageContext] Failed to update language:', error);
     },
   });
 
@@ -64,6 +69,7 @@ export const [LanguageProvider, useLanguage] = createContextHook(() => {
         console.log('[Language] Language changed successfully');
       } catch (error) {
         console.error('[Language] Error changing language:', error);
+        console.log('[Language] Language changed locally only (offline mode)');
       }
     },
     [updateMutation]

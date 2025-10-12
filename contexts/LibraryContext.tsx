@@ -5,11 +5,17 @@ import { MediaType } from '@/types/tvmaze';
 import { trpc } from '@/lib/trpc';
 
 export const [LibraryProvider, useLibrary] = createContextHook(() => {
-  const getAllQuery = trpc.library.getAll.useQuery();
+  const getAllQuery = trpc.library.getAll.useQuery(undefined, {
+    retry: 1,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
   
   useEffect(() => {
     if (getAllQuery.error) {
       console.error('[LibraryContext] Failed to fetch library:', getAllQuery.error);
+      console.log('[LibraryContext] Using empty library');
     }
   }, [getAllQuery.error]);
   const addMutation = trpc.library.add.useMutation({

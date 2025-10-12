@@ -3,13 +3,30 @@ import { useCallback, useMemo, useEffect } from 'react';
 import { UserPreferences } from '@/types/library';
 import { trpc } from '@/lib/trpc';
 
+const DEFAULT_PREFERENCES: UserPreferences = {
+  theme: 'dark' as const,
+  contentLanguage: 'tr-TR',
+  uiLanguage: 'tr',
+  ageRestriction: false,
+  autoPlayTrailers: false,
+  hapticsEnabled: true,
+  favoriteGenres: [],
+  hasCompletedOnboarding: false,
+};
+
 export const [PreferencesProvider, usePreferences] = createContextHook(() => {
   const utils = trpc.useUtils();
-  const preferencesQuery = trpc.preferences.get.useQuery();
+  const preferencesQuery = trpc.preferences.get.useQuery(undefined, {
+    retry: 1,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
   
   useEffect(() => {
     if (preferencesQuery.error) {
       console.error('[PreferencesContext] Failed to fetch preferences:', preferencesQuery.error);
+      console.log('[PreferencesContext] Using default preferences');
     }
   }, [preferencesQuery.error]);
   const updateMutation = trpc.preferences.update.useMutation({
@@ -33,15 +50,11 @@ export const [PreferencesProvider, usePreferences] = createContextHook(() => {
     },
   });
 
-  const preferences = useMemo(() => preferencesQuery.data || {
-    theme: 'dark' as const,
-    contentLanguage: 'tr-TR',
-    uiLanguage: 'tr',
-    ageRestriction: false,
-    autoPlayTrailers: false,
-    hapticsEnabled: true,
-    favoriteGenres: [],
-    hasCompletedOnboarding: false,
+  const preferences = useMemo(() => {
+    if (preferencesQuery.data) {
+      return preferencesQuery.data;
+    }
+    return DEFAULT_PREFERENCES;
   }, [preferencesQuery.data]);
   const isLoading = preferencesQuery.isLoading;
 
