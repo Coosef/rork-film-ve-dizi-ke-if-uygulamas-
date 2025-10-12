@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { Download, FileJson, FileSpreadsheet, Share2 } from 'lucide-react-native';
+import { Download, FileJson, FileSpreadsheet, Share2, Upload } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -48,6 +48,23 @@ export default function ExportDataScreen() {
     }
   };
 
+  const handleImportData = async () => {
+    Alert.alert(
+      'Veri İçe Aktar',
+      'JSON dosyası seçerek verilerinizi geri yükleyebilirsiniz. Mevcut verileriniz silinecektir.',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Devam Et',
+          onPress: () => {
+            console.log('[Import] Import data feature - Coming soon');
+            Alert.alert('Yakında', 'Bu özellik yakında eklenecek');
+          },
+        },
+      ]
+    );
+  };
+
   const stats = {
     totalShows: interactions.length,
     totalEpisodes: interactions.reduce((sum, i) => sum + (i.watchProgress?.watchedEpisodes || 0), 0),
@@ -85,10 +102,29 @@ export default function ExportDataScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Dışa Aktarma Formatı</Text>
+            <Text style={styles.sectionTitle}>Veri Yönetimi</Text>
             <Text style={styles.sectionDescription}>
-              Verilerinizi farklı formatlarda dışa aktarabilirsiniz
+              Verilerinizi dışa aktarın veya içe aktarın
             </Text>
+
+            <Pressable
+              style={[styles.importCard]}
+              onPress={handleImportData}
+            >
+              <View style={[styles.exportCardIcon, styles.importCardIcon]}>
+                <Upload size={32} color={Colors.dark.accent} />
+              </View>
+              <View style={styles.exportCardContent}>
+                <Text style={styles.exportCardTitle}>Veri İçe Aktar</Text>
+                <Text style={styles.exportCardDescription}>
+                  JSON dosyası seçerek verilerinizi geri yükleyin
+                </Text>
+              </View>
+              <Upload size={24} color={Colors.dark.textSecondary} />
+            </Pressable>
+
+            <View style={styles.divider} />
+            <Text style={styles.subsectionTitle}>Dışa Aktarma Formatları</Text>
 
             <Pressable
               style={[styles.exportCard, isExporting && styles.exportCardDisabled]}
@@ -273,5 +309,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.dark.textSecondary,
     lineHeight: 22,
+  },
+  importCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${Colors.dark.accent}20`,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: Colors.dark.accent,
+  },
+  importCardIcon: {
+    backgroundColor: `${Colors.dark.accent}30`,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.dark.border,
+    marginVertical: 24,
+  },
+  subsectionTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: Colors.dark.text,
+    marginBottom: 16,
   },
 });

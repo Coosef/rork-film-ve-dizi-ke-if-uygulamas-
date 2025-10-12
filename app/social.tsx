@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Users, MessageCircle, Heart, TrendingUp, Search, UserPlus, X } from 'lucide-react-native';
+import { Users, MessageCircle, Heart, TrendingUp, Search, UserPlus, X, Share2, BarChart3 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -149,6 +149,14 @@ export default function SocialScreen() {
     setFriends(friends.filter(f => f.id !== friendId));
   };
 
+  const handleShareLibrary = () => {
+    console.log('[Social] Sharing library...');
+  };
+
+  const handleCompareLibraries = (friendId: string) => {
+    console.log('[Social] Comparing libraries with friend:', friendId);
+  };
+
   const renderFriendCard = (friend: Friend, showActions: boolean = true) => (
     <GlassPanel key={friend.id} style={styles.friendCard}>
       <View style={styles.friendHeader}>
@@ -176,28 +184,45 @@ export default function SocialScreen() {
       </View>
       {showActions && (
         <View style={styles.friendActions}>
-          <Pressable 
-            style={[styles.friendActionButton, styles.messageButton]}
-            onPress={() => {}}
-          >
-            <MessageCircle size={18} color={Colors.dark.text} />
-            <Text style={styles.friendActionText}>Mesaj</Text>
-          </Pressable>
           {activeTab === 'friends' ? (
-            <Pressable 
-              style={[styles.friendActionButton, styles.removeButton]}
-              onPress={() => handleRemoveFriend(friend.id)}
-            >
-              <X size={18} color={Colors.dark.error} />
-            </Pressable>
+            <>
+              <Pressable 
+                style={[styles.friendActionButton, styles.compareButton]}
+                onPress={() => handleCompareLibraries(friend.id)}
+              >
+                <BarChart3 size={18} color={Colors.dark.primary} />
+                <Text style={styles.friendActionText}>Karşılaştır</Text>
+              </Pressable>
+              <Pressable 
+                style={[styles.friendActionButton, styles.messageButton]}
+                onPress={() => {}}
+              >
+                <MessageCircle size={18} color={Colors.dark.text} />
+              </Pressable>
+              <Pressable 
+                style={[styles.friendActionButton, styles.removeButton]}
+                onPress={() => handleRemoveFriend(friend.id)}
+              >
+                <X size={18} color={Colors.dark.error} />
+              </Pressable>
+            </>
           ) : (
-            <Pressable 
-              style={[styles.friendActionButton, styles.addButton]}
-              onPress={() => handleAddFriend(friend.id)}
-            >
-              <UserPlus size={18} color={Colors.dark.primary} />
-              <Text style={styles.friendActionText}>Ekle</Text>
-            </Pressable>
+            <>
+              <Pressable 
+                style={[styles.friendActionButton, styles.messageButton]}
+                onPress={() => {}}
+              >
+                <MessageCircle size={18} color={Colors.dark.text} />
+                <Text style={styles.friendActionText}>Mesaj</Text>
+              </Pressable>
+              <Pressable 
+                style={[styles.friendActionButton, styles.addButton]}
+                onPress={() => handleAddFriend(friend.id)}
+              >
+                <UserPlus size={18} color={Colors.dark.primary} />
+                <Text style={styles.friendActionText}>Ekle</Text>
+              </Pressable>
+            </>
           )}
         </View>
       )}
@@ -261,7 +286,9 @@ export default function SocialScreen() {
             <X size={24} color={Colors.dark.text} />
           </Pressable>
           <Text style={styles.headerTitle}>Sosyal</Text>
-          <View style={styles.headerPlaceholder} />
+          <Pressable onPress={handleShareLibrary} style={styles.shareButton}>
+            <Share2 size={20} color={Colors.dark.primary} />
+          </Pressable>
         </View>
         <View style={styles.searchContainer}>
           <Search size={20} color={Colors.dark.textSecondary} />
@@ -371,8 +398,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700' as const,
   },
-  headerPlaceholder: {
+  shareButton: {
     width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: `${Colors.dark.primary}20`,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    borderWidth: 1,
+    borderColor: Colors.dark.primary,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -541,6 +575,12 @@ const styles = StyleSheet.create({
   messageButton: {
     backgroundColor: Colors.dark.surfaceLight,
     borderColor: Colors.dark.border,
+    flex: 0,
+    paddingHorizontal: 12,
+  },
+  compareButton: {
+    backgroundColor: `${Colors.dark.primary}20`,
+    borderColor: Colors.dark.primary,
   },
   addButton: {
     backgroundColor: `${Colors.dark.primary}20`,

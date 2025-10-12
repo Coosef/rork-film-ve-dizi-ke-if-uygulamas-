@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter, Stack } from 'expo-router';
-import { Sparkles, Clock, Zap } from 'lucide-react-native';
+import { Sparkles, Clock, Zap, TrendingUp, Eye, Star } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import {
   StyleSheet,
@@ -16,7 +16,7 @@ import { useLibrary } from '@/contexts/LibraryContext';
 import { getShowDetails, convertShowToMediaItem } from '@/services/tvmaze';
 import { MediaItem } from '@/types/tvmaze';
 
-type SmartListType = 'newSeasons' | 'abandoned' | 'quickFinish';
+type SmartListType = 'bingeWorthy' | 'hiddenGems' | 'quickWatch' | 'newSeasons' | 'abandoned' | 'quickFinish';
 
 export default function SmartListsScreen() {
   const router = useRouter();
@@ -32,11 +32,51 @@ export default function SmartListsScreen() {
     ];
   }, [getInteractionsByType]);
 
+  const showsQuery = useQuery({
+    queryKey: ['smartListsShows', allInteractions.map(i => i.mediaId)],
+    queryFn: async () => {
+      const shows = await Promise.all(
+        allInteractions.map(i => getShowDetails(i.mediaId).catch(() => null))
+      );
+      return shows.filter(Boolean);
+    },
+    enabled: allInteractions.length > 0,
+  });
+
+  const shows = showsQuery.data || [];
+
   const smartLists = useMemo(() => {
     const now = new Date();
     const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
+    const bingeWorthy = allInteractions.filter(i => {
+      const show = shows.find(s => s?.id === i.mediaId);
+      if (!show) return false;
+      const rating = show.rating?.average || 0;
+      const totalEpisodes = i.watchProgress?.totalEpisodes || 0;
+      return rating >= 8.0 && totalEpisodes >= 20 && i.type !== 'watched';
+    });
+
+    const hiddenGems = allInteractions.filter(i => {
+      const show = shows.find(s => s?.id === i.mediaId);
+      if (!show) return false;
+      const rating = show.rating?.average || 0;
+      const weight = show.weight || 0;
+      return rating >= 8.5 && weight < 80 && i.type !== 'watched';
+    });
+
+    const quickWatch = allInteractions.filter(i => {
+      const show = shows.find(s => s?.id === i.mediaId);
+      if (!show) return false;
+      const totalEpisodes = i.watchProgress?.totalEpisodes || 0;
+      const rating = show.rating?.average || 0;
+      return totalEpisodes <= 12 && rating >= 7.5 && i.type !== 'watched';
+    });
+
     return {
+      bingeWorthy,
+      hiddenGems,
+      quickWatch,
       newSeasons: allInteractions.filter(i => {
         const lastWatched = i.watchProgress?.lastWatchedAt;
         if (!lastWatched) return false;
@@ -54,15 +94,42 @@ export default function SmartListsScreen() {
         return progress.totalEpisodes <= 10 && progress.watchedEpisodes < progress.totalEpisodes;
       }),
     };
-  }, [allInteractions]);
+  }, [allInteractions, shows]);
 
   const lists = [
+    {
+      key: 'bingeWorthy' as SmartListType,
+      title: 'Maraton Yapılacaklar',
+      description: 'Yüksek puanlı, uzun diziler',
+      icon: TrendingUp,
+      color: Colors.dark.primary,
+      count: smartLists.bingeWorthy.length,
+      interactions: smartLists.bingeWorthy,
+    },
+    {
+      key: 'hiddenGems' as SmartListType,
+      title: 'Gizli Hazineler',
+      description: 'Az bilinen ama harika diziler',
+      icon: Star,
+      color: '#FFD700',
+      count: smartLists.hiddenGems.length,
+      interactions: smartLists.hiddenGems,
+    },
+    {
+      key: 'quickWatch' as SmartListType,
+      title: 'Hızlı İzlenenler',
+      description: 'Kısa ve kaliteli diziler',
+      icon: Zap,
+      color: Colors.dark.accent,
+      count: smartLists.quickWatch.length,
+      interactions: smartLists.quickWatch,
+    },
     {
       key: 'newSeasons' as SmartListType,
       title: 'Yeni Sezonu Çıkanlar',
       description: 'Son 3 ayda izlediğiniz diziler',
       icon: Sparkles,
-      color: Colors.dark.primary,
+      color: '#9333EA',
       count: smartLists.newSeasons.length,
       interactions: smartLists.newSeasons,
     },
@@ -79,8 +146,8 @@ export default function SmartListsScreen() {
       key: 'quickFinish' as SmartListType,
       title: 'Tek Sezonda Bitebilenler',
       description: '10 bölüm veya daha az',
-      icon: Zap,
-      color: Colors.dark.accent,
+      icon: Eye,
+      color: '#10B981',
       count: smartLists.quickFinish.length,
       interactions: smartLists.quickFinish,
     },
