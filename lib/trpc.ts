@@ -6,8 +6,14 @@ import superjson from "superjson";
 export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    console.log('[tRPC Client] Using window origin:', origin);
+    return origin;
+  }
+  
   const baseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
-  console.log('[tRPC Client] Base URL:', baseUrl);
+  console.log('[tRPC Client] Base URL from env:', baseUrl);
   
   if (!baseUrl) {
     console.warn('[tRPC Client] No base URL found, using fallback');

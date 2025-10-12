@@ -21,6 +21,16 @@ export default function OptimizedImage({
   const [hasError, setHasError] = useState(false);
   const [showLowQuality, setShowLowQuality] = useState(!!lowQualityUri);
 
+  if (!uri || uri.trim() === '') {
+    return (
+      <View style={[styles.container, { aspectRatio }, style]}>
+        <View style={styles.placeholder}>
+          <View style={styles.placeholderIcon} />
+        </View>
+      </View>
+    );
+  }
+
   const handleLoadStart = () => {
     setIsLoading(true);
   };
@@ -49,7 +59,7 @@ export default function OptimizedImage({
 
   return (
     <View style={[styles.container, { aspectRatio }, style]}>
-      {showLowQuality && lowQualityUri && (
+      {showLowQuality && lowQualityUri && lowQualityUri.trim() !== '' && (
         <Image
           source={{ uri: lowQualityUri }}
           style={[StyleSheet.absoluteFill, styles.lowQualityImage]}
@@ -57,14 +67,16 @@ export default function OptimizedImage({
         />
       )}
       
-      <Image
-        source={{ uri }}
-        style={[StyleSheet.absoluteFill, styles.image]}
-        onLoadStart={handleLoadStart}
-        onLoadEnd={handleLoadEnd}
-        onError={handleError}
-        {...props}
-      />
+      {uri && uri.trim() !== '' && (
+        <Image
+          source={{ uri }}
+          style={[StyleSheet.absoluteFill, styles.image]}
+          onLoadStart={handleLoadStart}
+          onLoadEnd={handleLoadEnd}
+          onError={handleError}
+          {...props}
+        />
+      )}
       
       {isLoading && showLoader && (
         <View style={styles.loaderContainer}>
