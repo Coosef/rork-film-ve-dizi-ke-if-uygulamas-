@@ -29,7 +29,10 @@ export default function ProfileScreen() {
   const { getInteractionsByType } = useLibrary();
   const { preferences, updatePreferences } = usePreferences();
   const insets = useSafeAreaInsets();
-  const statsQuery = trpc.library.getStats.useQuery();
+  const statsQuery = trpc.library.getStats.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
   const stats = statsQuery.data || {
     totalWatched: 0,
     totalWatchlist: 0,
@@ -263,28 +266,31 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Son İzlenenler</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentlyWatchedScroll}>
-              {recentShows.map(({ show, interaction }) => (
-                <GlassPanel key={interaction.id} style={styles.recentlyWatchedCard}>
-                  {show.image?.medium ? (
-                    <Image 
-                      source={{ uri: show.image.medium }} 
-                      style={styles.recentlyWatchedImage}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View style={styles.recentlyWatchedPlaceholder}>
-                      <Tv size={32} color={Colors.dark.primary} />
-                    </View>
-                  )}
-                  <Text style={styles.recentlyWatchedTitle} numberOfLines={2}>{show.name}</Text>
-                  {interaction.rating && (
-                    <View style={styles.recentlyWatchedRating}>
-                      <Star size={12} color={Colors.dark.warning} fill={Colors.dark.warning} />
-                      <Text style={styles.recentlyWatchedRatingText}>{interaction.rating.toFixed(1)}</Text>
-                    </View>
-                  )}
-                </GlassPanel>
-              ))}
+              {recentShows.map(({ show, interaction }) => {
+                const imageUri = show.image?.medium || show.image?.original || '';
+                return (
+                  <GlassPanel key={interaction.id} style={styles.recentlyWatchedCard}>
+                    {imageUri ? (
+                      <Image 
+                        source={{ uri: imageUri }} 
+                        style={styles.recentlyWatchedImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.recentlyWatchedPlaceholder}>
+                        <Tv size={32} color={Colors.dark.primary} />
+                      </View>
+                    )}
+                    <Text style={styles.recentlyWatchedTitle} numberOfLines={2}>{show.name}</Text>
+                    {interaction.rating && (
+                      <View style={styles.recentlyWatchedRating}>
+                        <Star size={12} color={Colors.dark.warning} fill={Colors.dark.warning} />
+                        <Text style={styles.recentlyWatchedRatingText}>{interaction.rating.toFixed(1)}</Text>
+                      </View>
+                    )}
+                  </GlassPanel>
+                );
+              })}
             </ScrollView>
           </View>
         )}
