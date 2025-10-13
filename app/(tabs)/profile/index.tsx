@@ -1,7 +1,7 @@
 import { Film, Heart, Clock, TrendingUp, Settings, User, Bell, Shield, Moon, Globe, Volume2, Vibrate, ChevronRight, BarChart3, Award, Target, Flame, Zap, Star, Tv, Camera, Edit3, Share2, Users, MessageCircle, Trophy, Gift } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import {
   StyleSheet,
   Text,
@@ -124,6 +124,18 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable
+              onPress={() => setShowSettingsModal(true)}
+              style={{ padding: 8 }}
+            >
+              <Settings size={24} color={Colors.dark.primary} />
+            </Pressable>
+          ),
+        }}
+      />
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
