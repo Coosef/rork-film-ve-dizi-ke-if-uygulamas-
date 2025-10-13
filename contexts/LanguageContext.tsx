@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { Language, translations, TranslationKeys } from '@/locales';
-import { trpc } from '@/lib/trpc';
+import { usePreferences } from '@/contexts/PreferencesContext';
 
 type TranslationPath<T> = T extends object
   ? {
@@ -16,30 +16,15 @@ type TranslationPath<T> = T extends object
 type TranslationKey = TranslationPath<TranslationKeys>;
 
 export const [LanguageProvider, useLanguage] = createContextHook(() => {
-  const utils = trpc.useUtils();
-  const preferencesQuery = trpc.preferences.get.useQuery(undefined, {
-    retry: 1,
-    retryDelay: 1000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-  });
-  const updateMutation = trpc.preferences.update.useMutation({
-    onSuccess: () => {
-      utils.preferences.get.invalidate();
-    },
-    onError: (error) => {
-      console.error('[LanguageContext] Failed to update language:', error);
-    },
-  });
-
-  const [currentLanguage, setCurrentLanguage] = useState<Language>('tr');
+  const { preferences, updatePreferences } = usePreferences();
+  const [currentLanguage, setCurrentLanguage] = useState<Language>(preferences.uiLanguage as Language || 'tr');
 
   useEffect(() => {
-    if (preferencesQuery.data?.uiLanguage) {
-      console.log('[Language] Setting language from preferences:', preferencesQuery.data.uiLanguage);
-      setCurrentLanguage(preferencesQuery.data.uiLanguage as Language);
+    if (preferences.uiLanguage) {
+      console.log('[Language] Setting language from preferences:', preferences.uiLanguage);
+      setCurrentLanguage(preferences.uiLanguage as Language);
     }
-  }, [preferencesQuery.data?.uiLanguage]);
+  }, [preferences.uiLanguage]);
 
   const t = useCallback(
     (key: TranslationKey): string => {
@@ -62,17 +47,12 @@ export const [LanguageProvider, useLanguage] = createContextHook(() => {
 
   const changeLanguage = useCallback(
     async (language: Language) => {
-      try {
-        console.log('[Language] Changing language to:', language);
-        setCurrentLanguage(language);
-        await updateMutation.mutateAsync({ uiLanguage: language });
-        console.log('[Language] Language changed successfully');
-      } catch (error) {
-        console.error('[Language] Error changing language:', error);
-        console.log('[Language] Language changed locally only (offline mode)');
-      }
+      console.log('[Language] Changing language to:', language);
+      setCurrentLanguage(language);
+      await updatePreferences({ uiLanguage: language });
+      console.log('[Language] Language changed successfully');
     },
-    [updateMutation]
+    [updatePreferences]
   );
 
   return useMemo(

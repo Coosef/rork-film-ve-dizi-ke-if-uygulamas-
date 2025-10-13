@@ -18,7 +18,7 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60 * 5,
       gcTime: 1000 * 60 * 30,
-      retry: 1,
+      retry: 0,
       retryDelay: 1000,
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
@@ -95,8 +95,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <LanguageProvider>
           <PreferencesProvider>
             <LibraryProvider>
@@ -110,7 +110,7 @@ export default function RootLayout() {
             </LibraryProvider>
           </PreferencesProvider>
         </LanguageProvider>
-      </QueryClientProvider>
-    </trpc.Provider>
+      </trpc.Provider>
+    </QueryClientProvider>
   );
 }

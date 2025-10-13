@@ -22,6 +22,28 @@ const getBaseUrl = () => {
   return 'http://localhost:8081';
 };
 
+const testBackendConnection = async () => {
+  const baseUrl = getBaseUrl();
+  try {
+    const response = await fetch(`${baseUrl}/api`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      console.log('[tRPC Client] ✓ Backend connected:', data.message);
+    } else {
+      console.warn('[tRPC Client] ⚠ Backend not available (status:', response.status, '). App will work offline.');
+    }
+  } catch {
+    console.warn('[tRPC Client] ⚠ Backend not available. App will work offline.');
+  }
+};
+
+if (typeof window !== 'undefined') {
+  setTimeout(testBackendConnection, 1000);
+}
+
 export const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
