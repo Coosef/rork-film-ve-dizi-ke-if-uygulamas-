@@ -266,9 +266,10 @@ export default function ProfileScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentlyWatchedScroll}>
               {recentShows.map(({ show, interaction }) => {
                 const imageUri = show.image?.medium || show.image?.original || '';
+                const hasValidImage = imageUri && imageUri.trim() !== '';
                 return (
                   <GlassPanel key={interaction.id} style={styles.recentlyWatchedCard}>
-                    {imageUri ? (
+                    {hasValidImage ? (
                       <Image 
                         source={{ uri: imageUri }} 
                         style={styles.recentlyWatchedImage}
