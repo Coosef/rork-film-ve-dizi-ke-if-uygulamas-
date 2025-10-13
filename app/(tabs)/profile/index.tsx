@@ -817,9 +817,9 @@ export default function ProfileScreen() {
                 <Text style={styles.modalClose}>✕</Text>
               </Pressable>
             </View>
-            <View style={styles.modalBody}>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <LanguageSelector />
-            </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
