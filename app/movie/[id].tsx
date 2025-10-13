@@ -248,11 +248,15 @@ export default function MovieDetailScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.headerContainer}>
-          <Image
-            source={{ uri: getImageUrl(movie as TVMazeShow, 'original') }}
-            style={styles.backdropImage}
-            contentFit="cover"
-          />
+          {getImageUrl(movie as TVMazeShow, 'original') ? (
+            <Image
+              source={{ uri: getImageUrl(movie as TVMazeShow, 'original') }}
+              style={styles.backdropImage}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.backdropImage, { backgroundColor: Colors.dark.surfaceLight }]} />
+          )}
           <LinearGradient
             colors={['transparent', Colors.dark.background]}
             style={styles.gradient}
@@ -264,11 +268,15 @@ export default function MovieDetailScreen() {
 
         <View style={styles.content}>
           <View style={styles.posterRow}>
-            <Image
-              source={{ uri: getImageUrl(movie as TVMazeShow, 'medium') }}
-              style={styles.posterImage}
-              contentFit="cover"
-            />
+            {getImageUrl(movie as TVMazeShow, 'medium') ? (
+              <Image
+                source={{ uri: getImageUrl(movie as TVMazeShow, 'medium') }}
+                style={styles.posterImage}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={[styles.posterImage, { backgroundColor: Colors.dark.surfaceLight }]} />
+            )}
             <View style={styles.titleSection}>
               <Text style={styles.title}>{movie.name}</Text>
               <View style={styles.metaRow}>
@@ -555,11 +563,15 @@ export default function MovieDetailScreen() {
               <View style={styles.platformsContainer}>
                 {streamingProviders.map((provider: StreamingProvider) => (
                   <View key={provider.providerId} style={styles.platformCard}>
-                    <Image
-                      source={{ uri: provider.logoPath }}
-                      style={styles.platformLogo}
-                      contentFit="contain"
-                    />
+                    {provider.logoPath ? (
+                      <Image
+                        source={{ uri: provider.logoPath }}
+                        style={styles.platformLogo}
+                        contentFit="contain"
+                      />
+                    ) : (
+                      <View style={[styles.platformLogo, { backgroundColor: Colors.dark.surfaceLight }]} />
+                    )}
                     <View style={styles.platformInfo}>
                       <Text style={styles.platformName}>{provider.provider}</Text>
                       <Text style={styles.platformType}>Streaming</Text>
@@ -764,11 +776,15 @@ export default function MovieDetailScreen() {
                 <View style={styles.castContainer}>
                   {cast.map(actor => (
                     <View key={actor.person.id} style={styles.castCard}>
-                      <Image
-                        source={{ uri: actor.person.image?.medium || 'https://via.placeholder.com/100?text=No+Image' }}
-                        style={styles.castImage}
-                        contentFit="cover"
-                      />
+                      {actor.person.image?.medium ? (
+                        <Image
+                          source={{ uri: actor.person.image.medium }}
+                          style={styles.castImage}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={[styles.castImage, { backgroundColor: Colors.dark.surfaceLight }]} />
+                      )}
                       <Text style={styles.castName} numberOfLines={1}>
                         {actor.person.name}
                       </Text>
