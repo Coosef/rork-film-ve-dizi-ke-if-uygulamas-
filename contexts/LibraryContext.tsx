@@ -1,48 +1,44 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useCallback, useMemo, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { Interaction, InteractionType, LibraryStats, WatchProgress, Review } from '@/types/library';
 import { MediaType } from '@/types/tvmaze';
-import { trpc } from '@/lib/trpc';
+
+const LIBRARY_KEY = '@library_interactions';
 
 export const [LibraryProvider, useLibrary] = createContextHook(() => {
-  const getAllQuery = trpc.library.getAll.useQuery(undefined, {
-    retry: 0,
-    retryDelay: 1000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    enabled: true,
-  });
-  
-  useEffect(() => {
-    if (getAllQuery.error) {
-      console.error('[LibraryContext] Failed to fetch library:', getAllQuery.error);
-      console.log('[LibraryContext] Using empty library');
-    }
-    if (getAllQuery.isSuccess) {
-      console.log('[LibraryContext] Successfully fetched library:', getAllQuery.data?.length || 0, 'items');
-    }
-  }, [getAllQuery.error, getAllQuery.isSuccess, getAllQuery.data]);
-  const addMutation = trpc.library.add.useMutation({
-    onSuccess: (data) => {
-      console.log('[LibraryContext] Add mutation success:', data);
-      getAllQuery.refetch();
-    },
-    onError: (error) => {
-      console.error('[LibraryContext] Add mutation failed:', error);
-    },
-  });
-  const removeMutation = trpc.library.remove.useMutation({
-    onSuccess: (data) => {
-      console.log('[LibraryContext] Remove mutation success:', data);
-      getAllQuery.refetch();
-    },
-    onError: (error) => {
-      console.error('[LibraryContext] Remove mutation failed:', error);
-    },
-  });
+  const [interactions, setInteractions] = useState<Interaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const interactions = useMemo(() => getAllQuery.data || [], [getAllQuery.data]);
-  const isLoading = getAllQuery.isLoading;
+  useEffect(() => {
+    loadLibrary();
+  }, []);
+
+  const loadLibrary = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(LIBRARY_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setInteractions(parsed);
+        console.log('[LibraryContext] Successfully loaded library:', parsed.length, 'items');
+      } else {
+        console.log('[LibraryContext] No library data found, starting fresh');
+      }
+    } catch (error) {
+      console.error('[LibraryContext] Failed to load library:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveLibrary = async (newInteractions: Interaction[]) => {
+    try {
+      await AsyncStorage.setItem(LIBRARY_KEY, JSON.stringify(newInteractions));
+      console.log('[LibraryContext] Successfully saved library:', newInteractions.length, 'items');
+    } catch (error) {
+      console.error('[LibraryContext] Failed to save library:', error);
+    }
+  };
 
   const addInteraction = useCallback((
     mediaId: number,
@@ -54,24 +50,34 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
     review?: Review
   ) => {
     console.log('[Library] Adding interaction for', mediaId, 'type:', type);
-    addMutation.mutate({
-      mediaId,
-      mediaType,
-      type,
-      rating,
-      note,
-      watchProgress,
-      review,
+    setInteractions(prev => {
+      const filtered = prev.filter(i => !(i.mediaId === mediaId && i.mediaType === mediaType));
+      const newInteraction: Interaction = {
+        id: `${mediaType}-${mediaId}-${Date.now()}`,
+        mediaId,
+        mediaType,
+        type,
+        rating,
+        note,
+        watchProgress,
+        review,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      const newInteractions = [...filtered, newInteraction];
+      saveLibrary(newInteractions);
+      return newInteractions;
     });
-  }, [addMutation]);
+  }, []);
 
   const removeInteraction = useCallback((mediaId: number, mediaType: MediaType) => {
     console.log('[Library] Removing interaction for', mediaId);
-    removeMutation.mutate({
-      mediaId,
-      mediaType,
+    setInteractions(prev => {
+      const newInteractions = prev.filter(i => !(i.mediaId === mediaId && i.mediaType === mediaType));
+      saveLibrary(newInteractions);
+      return newInteractions;
     });
-  }, [removeMutation]);
+  }, []);
 
   const getInteraction = useCallback((mediaId: number, mediaType: MediaType): Interaction | undefined => {
     return interactions.find(i => i.mediaId === mediaId && i.mediaType === mediaType);

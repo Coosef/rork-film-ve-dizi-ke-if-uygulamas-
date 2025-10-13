@@ -1,7 +1,9 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useCallback, useMemo, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { UserPreferences } from '@/types/library';
-import { trpc } from '@/lib/trpc';
+
+const PREFERENCES_KEY = '@user_preferences';
 
 const DEFAULT_PREFERENCES: UserPreferences = {
   theme: 'dark' as const,
@@ -15,63 +17,47 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 };
 
 export const [PreferencesProvider, usePreferences] = createContextHook(() => {
-  const utils = trpc.useUtils();
-  const preferencesQuery = trpc.preferences.get.useQuery(undefined, {
-    retry: 0,
-    retryDelay: 1000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    enabled: true,
-  });
-  
-  useEffect(() => {
-    if (preferencesQuery.error) {
-      console.error('[PreferencesContext] Failed to fetch preferences:', preferencesQuery.error);
-      console.log('[PreferencesContext] Using default preferences');
-    }
-    if (preferencesQuery.isSuccess) {
-      console.log('[PreferencesContext] Successfully fetched preferences:', preferencesQuery.data);
-    }
-  }, [preferencesQuery.error, preferencesQuery.isSuccess, preferencesQuery.data]);
-  const updateMutation = trpc.preferences.update.useMutation({
-    onMutate: async (updates) => {
-      await utils.preferences.get.cancel();
-      const previousData = utils.preferences.get.getData();
-      utils.preferences.get.setData(undefined, (old) => ({
-        ...old!,
-        ...updates,
-      }));
-      return { previousData };
-    },
-    onError: (err, updates, context) => {
-      console.error('[PreferencesContext] Update mutation failed:', err);
-      if (context?.previousData) {
-        utils.preferences.get.setData(undefined, context.previousData);
-      }
-    },
-    onSettled: () => {
-      utils.preferences.get.invalidate();
-    },
-  });
+  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const preferences = useMemo(() => {
-    if (preferencesQuery.data) {
-      return preferencesQuery.data;
+  useEffect(() => {
+    loadPreferences();
+  }, []);
+
+  const loadPreferences = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(PREFERENCES_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setPreferences(parsed);
+        console.log('[PreferencesContext] Successfully loaded preferences:', parsed);
+      } else {
+        console.log('[PreferencesContext] No preferences found, using defaults');
+      }
+    } catch (error) {
+      console.error('[PreferencesContext] Failed to load preferences:', error);
+    } finally {
+      setIsLoading(false);
     }
-    return DEFAULT_PREFERENCES;
-  }, [preferencesQuery.data]);
-  const isLoading = preferencesQuery.isLoading;
+  };
+
+  const savePreferences = async (newPreferences: UserPreferences) => {
+    try {
+      await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(newPreferences));
+      console.log('[PreferencesContext] Successfully saved preferences');
+    } catch (error) {
+      console.error('[PreferencesContext] Failed to save preferences:', error);
+    }
+  };
 
   const updatePreferences = useCallback(async (updates: Partial<UserPreferences>) => {
     console.log('[Preferences] Updating:', updates);
-    try {
-      await updateMutation.mutateAsync(updates);
-      console.log('[Preferences] Update successful');
-    } catch (error) {
-      console.error('[Preferences] Update failed:', error);
-      throw error;
-    }
-  }, [updateMutation]);
+    setPreferences(prev => {
+      const newPreferences = { ...prev, ...updates };
+      savePreferences(newPreferences);
+      return newPreferences;
+    });
+  }, []);
 
   const toggleFavoriteGenre = useCallback((genreId: number) => {
     const currentGenres = preferences.favoriteGenres || [];
