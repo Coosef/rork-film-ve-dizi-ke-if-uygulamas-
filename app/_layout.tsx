@@ -32,15 +32,28 @@ const queryClient = new QueryClient({
 });
 
 function RootLayoutNav() {
-  const { preferences, isLoading } = usePreferences();
   const router = useRouter();
   const segments = useSegments();
+  const preferencesContext = usePreferences();
 
-  console.log('[RootLayoutNav] Render - isLoading:', isLoading, 'preferences:', preferences);
+  const preferences = preferencesContext?.preferences;
+  const isLoading = preferencesContext?.isLoading ?? true;
+
+  console.log('[RootLayoutNav] Render - isLoading:', isLoading, 'preferences:', preferences, 'context:', preferencesContext);
 
   useEffect(() => {
+    if (!preferencesContext) {
+      console.error('[RootLayoutNav] PreferencesContext is undefined!');
+      return;
+    }
+
     if (isLoading) {
       console.log('[RootLayout] Still loading preferences...');
+      return;
+    }
+
+    if (!preferences) {
+      console.error('[RootLayoutNav] Preferences is undefined!');
       return;
     }
 
@@ -54,9 +67,9 @@ function RootLayoutNav() {
     } else if (hasCompletedOnboarding && inOnboarding) {
       router.replace('/(tabs)/(home)');
     }
-  }, [preferences.hasCompletedOnboarding, isLoading, segments, router]);
+  }, [preferences?.hasCompletedOnboarding, isLoading, segments, router, preferencesContext, preferences]);
 
-  if (isLoading) {
+  if (!preferencesContext || isLoading) {
     return null;
   }
 
