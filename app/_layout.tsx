@@ -34,26 +34,18 @@ const queryClient = new QueryClient({
 function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
-  const preferencesContext = usePreferences();
-
-  const preferences = preferencesContext?.preferences;
-  const isLoading = preferencesContext?.isLoading ?? true;
-
-  console.log('[RootLayoutNav] Render - isLoading:', isLoading, 'preferences:', preferences, 'context:', preferencesContext);
+  const { preferences, isLoading } = usePreferences();
+  const [appReady, setAppReady] = React.useState(false);
 
   useEffect(() => {
-    if (!preferencesContext) {
-      console.error('[RootLayoutNav] PreferencesContext is undefined!');
-      return;
+    if (!isLoading) {
+      setAppReady(true);
+      SplashScreen.hideAsync();
     }
+  }, [isLoading]);
 
-    if (isLoading) {
-      console.log('[RootLayout] Still loading preferences...');
-      return;
-    }
-
-    if (!preferences) {
-      console.error('[RootLayoutNav] Preferences is undefined!');
+  useEffect(() => {
+    if (!appReady || isLoading) {
       return;
     }
 
@@ -67,9 +59,9 @@ function RootLayoutNav() {
     } else if (hasCompletedOnboarding && inOnboarding) {
       router.replace('/(tabs)/(home)');
     }
-  }, [preferences?.hasCompletedOnboarding, isLoading, segments, router, preferencesContext, preferences]);
+  }, [preferences.hasCompletedOnboarding, appReady, isLoading, segments, router]);
 
-  if (!preferencesContext || isLoading) {
+  if (!appReady || isLoading) {
     return null;
   }
 
@@ -103,10 +95,6 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
