@@ -6,16 +6,16 @@ import superjson from "superjson";
 export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    console.log('[tRPC Client] Using window origin:', origin);
+    return origin;
+  }
+  
   const envUrl = process.env.EXPO_PUBLIC_API_URL;
   if (envUrl) {
     console.log('[tRPC Client] Using env URL:', envUrl);
     return envUrl;
-  }
-  
-  if (typeof window !== 'undefined' && window.location.origin.includes('localhost')) {
-    const origin = window.location.origin;
-    console.log('[tRPC Client] Using window origin:', origin);
-    return origin;
   }
   
   console.log('[tRPC Client] Fallback to localhost');
