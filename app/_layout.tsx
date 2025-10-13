@@ -39,22 +39,25 @@ function RootLayoutNav() {
   const [hasNavigated, setHasNavigated] = React.useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!appReady && preferencesContext) {
-        console.log('[RootLayout] Force ready after timeout');
-        setAppReady(true);
-        SplashScreen.hideAsync();
-      }
-    }, 1000);
+    if (!preferencesContext) {
+      return;
+    }
 
-    if (preferencesContext && !preferencesContext.isLoading) {
+    const timer = setTimeout(() => {
+      console.log('[RootLayout] Force ready after timeout');
+      setAppReady(true);
+      SplashScreen.hideAsync();
+    }, 2000);
+
+    if (!preferencesContext.isLoading) {
+      console.log('[RootLayout] Preferences loaded, app ready');
       setAppReady(true);
       SplashScreen.hideAsync();
       clearTimeout(timer);
     }
 
     return () => clearTimeout(timer);
-  }, [preferencesContext, appReady]);
+  }, [preferencesContext]);
 
   useEffect(() => {
     if (!appReady || !preferencesContext || hasNavigated) {
@@ -75,7 +78,7 @@ function RootLayoutNav() {
     }
   }, [preferencesContext, appReady, segments, router, hasNavigated]);
 
-  if (!appReady) {
+  if (!appReady || !preferencesContext) {
     return null;
   }
 
