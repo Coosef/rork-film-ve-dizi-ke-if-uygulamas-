@@ -25,7 +25,7 @@ const LANGUAGE_FLAGS: Record<Language, string> = {
 };
 
 export default function LanguageSelector() {
-  const { language, changeLanguage, availableLanguages } = useLanguage();
+  const { language, changeLanguage, availableLanguages, t } = useLanguage();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
 
@@ -92,16 +92,16 @@ export default function LanguageSelector() {
             <View style={styles.confirmIconContainer}>
               <AlertCircle size={48} color={Colors.dark.warning} />
             </View>
-            <Text style={styles.confirmTitle}>Dil Değiştir</Text>
+            <Text style={styles.confirmTitle}>{t('profile.changeLanguage')}</Text>
             <Text style={styles.confirmMessage}>
-              Uygulamanın dilini {selectedLanguage ? LANGUAGE_NAMES[selectedLanguage] : ''} olarak değiştirmek istediğinize emin misiniz?
+              {t('profile.changeLanguageConfirm').replace('{language}', selectedLanguage ? LANGUAGE_NAMES[selectedLanguage] : '')}
             </Text>
             <View style={styles.confirmButtons}>
               <Pressable style={styles.confirmButtonCancel} onPress={handleCancel}>
-                <Text style={styles.confirmButtonCancelText}>İptal</Text>
+                <Text style={styles.confirmButtonCancelText}>{t('common.cancel')}</Text>
               </Pressable>
               <Pressable style={styles.confirmButtonConfirm} onPress={handleConfirm}>
-                <Text style={styles.confirmButtonConfirmText}>Değiştir</Text>
+                <Text style={styles.confirmButtonConfirmText}>{t('profile.changeLanguage')}</Text>
               </Pressable>
             </View>
           </GlassPanel>

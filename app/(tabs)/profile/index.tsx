@@ -76,6 +76,7 @@ export default function ProfileScreen() {
 
   const { getInteractionsByType, getStats } = libraryContext;
   const { preferences, updatePreferences } = preferencesContext;
+  const { t } = languageContext;
   
   const stats = getStats();
 
@@ -86,25 +87,25 @@ export default function ProfileScreen() {
   const statCards = [
     {
       icon: Film,
-      label: 'İzlenen',
+      label: t('profile.watched'),
       value: stats.totalWatched,
       color: Colors.dark.primary,
     },
     {
       icon: Clock,
-      label: 'İzlenecek',
+      label: t('profile.watchlist'),
       value: stats.totalWatchlist,
       color: Colors.dark.warning,
     },
     {
       icon: Heart,
-      label: 'Favori',
+      label: t('profile.favorites'),
       value: stats.totalFavorites,
       color: Colors.dark.accent,
     },
     {
       icon: TrendingUp,
-      label: 'Ort. Puan',
+      label: t('profile.averageRating'),
       value: stats.averageRating.toFixed(1),
       color: Colors.dark.success,
     },
@@ -115,11 +116,14 @@ export default function ProfileScreen() {
 
   const handleShare = async () => {
     try {
-      const message = `🎬 Cinematch'te ${stats.totalWatched} dizi izledim!\n⭐ Ortalama puanım: ${stats.averageRating.toFixed(1)}\n🔥 Güncel serim: ${stats.currentStreak} gün\n\nSen de katıl ve dizi keşfetmeye başla!`;
+      const message = t('profile.shareMessage')
+        .replace('{watched}', stats.totalWatched.toString())
+        .replace('{rating}', stats.averageRating.toFixed(1))
+        .replace('{streak}', stats.currentStreak.toString());
       
       const result = await Share.share({
         message,
-        title: 'Cinematch İstatistiklerim',
+        title: t('profile.shareTitle'),
       });
 
       if (result.action === Share.sharedAction) {
@@ -127,7 +131,7 @@ export default function ProfileScreen() {
       }
     } catch (error) {
       console.error('[Profile] Error sharing:', error);
-      Alert.alert('Hata', 'Paylaşım sırasında bir hata oluştu');
+      Alert.alert(t('common.error'), t('profile.shareError'));
     }
   };
 
@@ -169,11 +173,11 @@ export default function ProfileScreen() {
           <View style={styles.socialActions}>
             <Pressable style={styles.socialButton} onPress={() => router.push('/social')}>
               <Users size={20} color={Colors.dark.text} />
-              <Text style={styles.socialButtonText}>Arkadaşlar</Text>
+              <Text style={styles.socialButtonText}>{t('profile.friends')}</Text>
             </Pressable>
             <Pressable style={styles.socialButton} onPress={handleShare}>
               <Share2 size={20} color={Colors.dark.text} />
-              <Text style={styles.socialButtonText}>Paylaş</Text>
+              <Text style={styles.socialButtonText}>{t('common.share')}</Text>
             </Pressable>
           </View>
         </View>
@@ -193,12 +197,12 @@ export default function ProfileScreen() {
         </Pressable>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>İlerleme</Text>
+          <Text style={styles.sectionTitle}>{t('profile.progress')}</Text>
           <View style={styles.progressRow}>
             <GlassPanel style={styles.progressCardHalf}>
               <View style={styles.progressHeader}>
                 <View style={styles.progressInfo}>
-                  <Text style={styles.progressTitle}>İzleme Oranı</Text>
+                  <Text style={styles.progressTitle}>{t('profile.watchingRate')}</Text>
                   <Text style={styles.progressPercentage}>{watchedPercentage}%</Text>
                 </View>
                 <View style={styles.progressIconContainer}>
@@ -209,7 +213,7 @@ export default function ProfileScreen() {
                 <View style={[styles.progressBar, { width: `${watchedPercentage}%` }]} />
               </View>
               <Text style={styles.progressText}>
-                {stats.totalWatched} / {totalShows} dizi
+                {stats.totalWatched} / {totalShows} {t('profile.shows')}
               </Text>
             </GlassPanel>
 
@@ -219,21 +223,21 @@ export default function ProfileScreen() {
                   <Flame size={24} color={Colors.dark.warning} />
                 </View>
                 <View style={styles.streakInfo}>
-                  <Text style={styles.streakLabel}>Güncel Seri</Text>
-                  <Text style={styles.streakValue}>{stats.currentStreak} gün</Text>
+                  <Text style={styles.streakLabel}>{t('profile.currentStreak')}</Text>
+                  <Text style={styles.streakValue}>{stats.currentStreak} {t('profile.days')}</Text>
                 </View>
               </View>
               <View style={styles.streakDivider} />
               <View style={styles.streakFooter}>
                 <Zap size={16} color={Colors.dark.textSecondary} />
-                <Text style={styles.streakFooterText}>En uzun: {stats.longestStreak} gün</Text>
+                <Text style={styles.streakFooterText}>{t('profile.longestStreak')}: {stats.longestStreak} {t('profile.days')}</Text>
               </View>
             </GlassPanel>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Haftalık Aktivite</Text>
+          <Text style={styles.sectionTitle}>{t('profile.weeklyActivity')}</Text>
           <GlassPanel style={styles.activityCard}>
             <View style={styles.activityChart}>
               {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((day, index) => {
@@ -269,7 +273,7 @@ export default function ProfileScreen() {
 
         {recentShows.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Son İzlenenler</Text>
+            <Text style={styles.sectionTitle}>{t('profile.recentlyWatched')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentlyWatchedScroll}>
               {recentShows.map(({ show, interaction }) => {
                 const imageUri = show.image?.medium || show.image?.original || '';
@@ -302,24 +306,23 @@ export default function ProfileScreen() {
         )}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hakkında</Text>
+          <Text style={styles.sectionTitle}>{t('profile.about')}</Text>
           <GlassPanel style={styles.aboutCard}>
             <Text style={styles.aboutText}>
-              Cinematch ile film keşfetmenin keyfini çıkarın! Tinder tarzı kaydırma ile yeni filmler keşfedin, 
-              izleme listenizi oluşturun ve favori filmlerinizi takip edin.
+              {t('profile.aboutDescription')}
             </Text>
           </GlassPanel>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hızlı Ayarlar</Text>
+          <Text style={styles.sectionTitle}>{t('profile.quickSettings')}</Text>
           <GlassPanel style={styles.settingsCard}>
             <View style={styles.settingItem}>
               <View style={styles.settingLeft}>
                 <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.primary}20` }]}>
                   <Moon size={20} color={Colors.dark.primary} />
                 </View>
-                <Text style={styles.settingText}>Karanlık Tema</Text>
+                <Text style={styles.settingText}>{t('profile.darkMode')}</Text>
               </View>
               <Switch
                 value={preferences.theme === 'dark'}
@@ -334,7 +337,7 @@ export default function ProfileScreen() {
                 <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.warning}20` }]}>
                   <Vibrate size={20} color={Colors.dark.warning} />
                 </View>
-                <Text style={styles.settingText}>Titreşim</Text>
+                <Text style={styles.settingText}>{t('profile.haptics')}</Text>
               </View>
               <Switch
                 value={preferences.hapticsEnabled}
@@ -349,7 +352,7 @@ export default function ProfileScreen() {
                 <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.accent}20` }]}>
                   <Volume2 size={20} color={Colors.dark.accent} />
                 </View>
-                <Text style={styles.settingText}>Otomatik Fragman</Text>
+                <Text style={styles.settingText}>{t('profile.autoPlayTrailers')}</Text>
               </View>
               <Switch
                 value={preferences.autoPlayTrailers}
@@ -364,7 +367,7 @@ export default function ProfileScreen() {
                 <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.textSecondary}20` }]}>
                   <Settings size={20} color={Colors.dark.textSecondary} />
                 </View>
-                <Text style={styles.settingText}>Tüm Ayarlar</Text>
+                <Text style={styles.settingText}>{t('profile.allSettings')}</Text>
               </View>
               <ChevronRight size={20} color={Colors.dark.textSecondary} />
             </Pressable>
@@ -372,36 +375,36 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Başarımlar</Text>
+          <Text style={styles.sectionTitle}>{t('profile.achievements')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.achievementsScroll}>
             <GlassPanel style={styles.achievementBadge}>
               <Trophy size={32} color={Colors.dark.warning} />
-              <Text style={styles.achievementBadgeTitle}>İlk Adım</Text>
-              <Text style={styles.achievementBadgeDesc}>İlk dizini izledin</Text>
+              <Text style={styles.achievementBadgeTitle}>{t('profile.firstStep')}</Text>
+              <Text style={styles.achievementBadgeDesc}>{t('profile.firstStepDesc')}</Text>
             </GlassPanel>
             <GlassPanel style={styles.achievementBadge}>
               <Flame size={32} color={Colors.dark.error} />
-              <Text style={styles.achievementBadgeTitle}>7 Günlük Seri</Text>
-              <Text style={styles.achievementBadgeDesc}>7 gün üst üste izledin</Text>
+              <Text style={styles.achievementBadgeTitle}>{t('profile.sevenDayStreak')}</Text>
+              <Text style={styles.achievementBadgeDesc}>{t('profile.sevenDayStreakDesc')}</Text>
             </GlassPanel>
             <GlassPanel style={styles.achievementBadge}>
               <Star size={32} color={Colors.dark.accent} />
-              <Text style={styles.achievementBadgeTitle}>Eleştirmen</Text>
-              <Text style={styles.achievementBadgeDesc}>10 değerlendirme yaptın</Text>
+              <Text style={styles.achievementBadgeTitle}>{t('profile.critic')}</Text>
+              <Text style={styles.achievementBadgeDesc}>{t('profile.criticDesc')}</Text>
             </GlassPanel>
             <GlassPanel style={[styles.achievementBadge, styles.achievementBadgeLocked]}>
               <Gift size={32} color={Colors.dark.textSecondary} />
-              <Text style={styles.achievementBadgeTitle}>Maraton Ustası</Text>
-              <Text style={styles.achievementBadgeDesc}>50 dizi izle</Text>
+              <Text style={styles.achievementBadgeTitle}>{t('profile.marathonMaster')}</Text>
+              <Text style={styles.achievementBadgeDesc}>{t('profile.marathonMasterDesc')}</Text>
             </GlassPanel>
           </ScrollView>
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Sosyal</Text>
+            <Text style={styles.sectionTitle}>{t('profile.social')}</Text>
             <Pressable onPress={() => setShowSocialModal(true)}>
-              <Text style={styles.sectionLink}>Tümünü Gör</Text>
+              <Text style={styles.sectionLink}>{t('profile.seeAll')}</Text>
             </Pressable>
           </View>
           <GlassPanel style={styles.socialCard}>
@@ -409,7 +412,7 @@ export default function ProfileScreen() {
               <Users size={24} color={Colors.dark.primary} />
               <View style={styles.socialStatInfo}>
                 <Text style={styles.socialStatValue}>24</Text>
-                <Text style={styles.socialStatLabel}>Arkadaş</Text>
+                <Text style={styles.socialStatLabel}>{t('profile.friends')}</Text>
               </View>
             </View>
             <View style={styles.socialDivider} />
@@ -417,7 +420,7 @@ export default function ProfileScreen() {
               <MessageCircle size={24} color={Colors.dark.accent} />
               <View style={styles.socialStatInfo}>
                 <Text style={styles.socialStatValue}>156</Text>
-                <Text style={styles.socialStatLabel}>Yorum</Text>
+                <Text style={styles.socialStatLabel}>{t('profile.comments')}</Text>
               </View>
             </View>
             <View style={styles.socialDivider} />
@@ -425,21 +428,21 @@ export default function ProfileScreen() {
               <Share2 size={24} color={Colors.dark.success} />
               <View style={styles.socialStatInfo}>
                 <Text style={styles.socialStatValue}>42</Text>
-                <Text style={styles.socialStatLabel}>Paylaşım</Text>
+                <Text style={styles.socialStatLabel}>{t('profile.shares')}</Text>
               </View>
             </View>
           </GlassPanel>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Özellikler</Text>
+          <Text style={styles.sectionTitle}>{t('profile.features')}</Text>
           <GlassPanel style={styles.featureCard}>
             <Pressable 
               style={styles.featureItem}
               onPress={() => router.push('/watch-party?title=Breaking Bad&id=169')}
             >
               <Text style={styles.featureBullet}>🎥</Text>
-              <Text style={styles.featureText}>Watch Party - Arkadaşlarınla birlikte izle</Text>
+              <Text style={styles.featureText}>{t('profile.watchParty')}</Text>
               <ChevronRight size={20} color={Colors.dark.primary} />
             </Pressable>
             <View style={styles.settingDivider} />
@@ -448,7 +451,7 @@ export default function ProfileScreen() {
               onPress={() => router.push('/smart-lists')}
             >
               <Text style={styles.featureBullet}>✨</Text>
-              <Text style={styles.featureText}>Akıllı Listeler - Özel öneriler</Text>
+              <Text style={styles.featureText}>{t('profile.smartLists')}</Text>
               <ChevronRight size={20} color={Colors.dark.primary} />
             </Pressable>
             <View style={styles.settingDivider} />
@@ -457,7 +460,7 @@ export default function ProfileScreen() {
               onPress={() => router.push('/export-data')}
             >
               <Text style={styles.featureBullet}>💾</Text>
-              <Text style={styles.featureText}>Veri Dışa Aktar - Yedekle</Text>
+              <Text style={styles.featureText}>{t('profile.exportData')}</Text>
               <ChevronRight size={20} color={Colors.dark.primary} />
             </Pressable>
             <View style={styles.settingDivider} />
@@ -466,7 +469,7 @@ export default function ProfileScreen() {
               onPress={() => router.push('/notification-settings')}
             >
               <Text style={styles.featureBullet}>🔔</Text>
-              <Text style={styles.featureText}>Bildirim Ayarları</Text>
+              <Text style={styles.featureText}>{t('profile.notificationSettings')}</Text>
               <ChevronRight size={20} color={Colors.dark.primary} />
             </Pressable>
           </GlassPanel>
@@ -483,7 +486,7 @@ export default function ProfileScreen() {
           <Pressable style={styles.modalBackdrop} onPress={() => setShowStatsModal(false)} />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Detaylı İstatistikler</Text>
+              <Text style={styles.modalTitle}>{t('profile.detailedStats')}</Text>
               <Pressable onPress={() => setShowStatsModal(false)}>
                 <Text style={styles.modalClose}>✕</Text>
               </Pressable>
@@ -495,8 +498,8 @@ export default function ProfileScreen() {
                     <BarChart3 size={28} color={Colors.dark.primary} />
                   </View>
                   <Text style={styles.detailedStatValue}>{stats.totalWatched}</Text>
-                  <Text style={styles.detailedStatLabel}>Toplam Dizi</Text>
-                  <Text style={styles.detailedStatSubtext}>İzlenen & İzleniyor</Text>
+                  <Text style={styles.detailedStatLabel}>{t('profile.totalShows')}</Text>
+                  <Text style={styles.detailedStatSubtext}>{t('profile.watchedAndWatching')}</Text>
                 </GlassPanel>
 
                 <GlassPanel style={styles.detailedStatCard}>
@@ -504,8 +507,8 @@ export default function ProfileScreen() {
                     <Tv size={28} color={Colors.dark.warning} />
                   </View>
                   <Text style={styles.detailedStatValue}>{stats.totalEpisodesWatched}</Text>
-                  <Text style={styles.detailedStatLabel}>Toplam Bölüm</Text>
-                  <Text style={styles.detailedStatSubtext}>~{Math.floor(stats.totalEpisodesWatched * 0.75)} saat</Text>
+                  <Text style={styles.detailedStatLabel}>{t('profile.totalEpisodes')}</Text>
+                  <Text style={styles.detailedStatSubtext}>~{Math.floor(stats.totalEpisodesWatched * 0.75)} {t('profile.hours')}</Text>
                 </GlassPanel>
 
                 <GlassPanel style={styles.detailedStatCard}>
@@ -513,7 +516,7 @@ export default function ProfileScreen() {
                     <Award size={28} color={Colors.dark.accent} />
                   </View>
                   <Text style={styles.detailedStatValue}>{stats.averageRating.toFixed(1)}</Text>
-                  <Text style={styles.detailedStatLabel}>Ortalama Puan</Text>
+                  <Text style={styles.detailedStatLabel}>{t('profile.averageRating')}</Text>
                   <Text style={styles.detailedStatSubtext}>En yüksek: 9.5</Text>
                 </GlassPanel>
 
@@ -522,34 +525,34 @@ export default function ProfileScreen() {
                     <TrendingUp size={28} color={Colors.dark.success} />
                   </View>
                   <Text style={styles.detailedStatValue}>{stats.totalFavorites}</Text>
-                  <Text style={styles.detailedStatLabel}>Favori Diziler</Text>
-                  <Text style={styles.detailedStatSubtext}>Kütüphanenin %{((stats.totalFavorites / totalShows) * 100).toFixed(0)}&apos;i</Text>
+                  <Text style={styles.detailedStatLabel}>{t('profile.favoriteShows')}</Text>
+                  <Text style={styles.detailedStatSubtext}>{t('profile.ofLibrary')} %{((stats.totalFavorites / totalShows) * 100).toFixed(0)}</Text>
                 </GlassPanel>
               </View>
 
               <View style={styles.achievementsSection}>
-                <Text style={styles.achievementsTitle}>Başarımlar</Text>
+                <Text style={styles.achievementsTitle}>{t('profile.achievements')}</Text>
                 <GlassPanel style={styles.achievementCard}>
                   <Text style={styles.achievementIcon}>🏆</Text>
                   <View style={styles.achievementInfo}>
-                    <Text style={styles.achievementName}>İlk Adım</Text>
-                    <Text style={styles.achievementDesc}>İlk dizini izledin!</Text>
+                    <Text style={styles.achievementName}>{t('profile.firstStep')}</Text>
+                    <Text style={styles.achievementDesc}>{t('profile.firstStepDesc')}!</Text>
                   </View>
                   <Text style={styles.achievementCheckmark}>✓</Text>
                 </GlassPanel>
                 <GlassPanel style={styles.achievementCard}>
                   <Text style={styles.achievementIcon}>🎬</Text>
                   <View style={styles.achievementInfo}>
-                    <Text style={styles.achievementName}>Dizi Tutkunu</Text>
-                    <Text style={styles.achievementDesc}>10 dizi izledin!</Text>
+                    <Text style={styles.achievementName}>{t('profile.showTutkunu')}</Text>
+                    <Text style={styles.achievementDesc}>{t('profile.showTutkunuDesc')}</Text>
                   </View>
                   <Text style={styles.achievementCheckmark}>✓</Text>
                 </GlassPanel>
                 <GlassPanel style={[styles.achievementCard, styles.achievementLocked]}>
                   <Text style={styles.achievementIcon}>🌟</Text>
                   <View style={styles.achievementInfo}>
-                    <Text style={styles.achievementName}>Maraton Ustası</Text>
-                    <Text style={styles.achievementDesc}>50 dizi izle</Text>
+                    <Text style={styles.achievementName}>{t('profile.marathonMaster')}</Text>
+                    <Text style={styles.achievementDesc}>{t('profile.marathonMasterDesc')}</Text>
                   </View>
                   <Text style={styles.achievementProgress}>{stats.totalWatched}/50</Text>
                 </GlassPanel>
@@ -569,14 +572,14 @@ export default function ProfileScreen() {
           <Pressable style={styles.modalBackdrop} onPress={() => setShowSettingsModal(false)} />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ayarlar</Text>
+              <Text style={styles.modalTitle}>{t('profile.settings')}</Text>
               <Pressable onPress={() => setShowSettingsModal(false)}>
                 <Text style={styles.modalClose}>✕</Text>
               </Pressable>
             </View>
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <View style={styles.settingsSection}>
-                <Text style={styles.settingsSectionTitle}>Tercihler</Text>
+                <Text style={styles.settingsSectionTitle}>{t('profile.preferences')}</Text>
                 <GlassPanel style={styles.settingsCard}>
                   <Pressable 
                     style={styles.settingItem}
@@ -591,7 +594,7 @@ export default function ProfileScreen() {
                       <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.primary}20` }]}>
                         <Settings size={20} color={Colors.dark.primary} />
                       </View>
-                      <Text style={styles.settingText}>Tür Tercihlerini Değiştir</Text>
+                      <Text style={styles.settingText}>{t('profile.changeGenrePreferences')}</Text>
                     </View>
                     <ChevronRight size={20} color={Colors.dark.textSecondary} />
                   </Pressable>
@@ -599,16 +602,16 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.settingsSection}>
-                <Text style={styles.settingsSectionTitle}>Görünüm</Text>
+                <Text style={styles.settingsSectionTitle}>{t('profile.appearance')}</Text>
                 <GlassPanel style={styles.settingsCard}>
                   <Pressable style={styles.settingItem}>
                     <View style={styles.settingLeft}>
                       <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.primary}20` }]}>
                         <Moon size={20} color={Colors.dark.primary} />
                       </View>
-                      <Text style={styles.settingText}>Tema</Text>
+                      <Text style={styles.settingText}>{t('profile.theme')}</Text>
                     </View>
-                    <Text style={styles.settingValue}>Karanlık</Text>
+                    <Text style={styles.settingValue}>{t('profile.dark')}</Text>
                   </Pressable>
                   <View style={styles.settingDivider} />
                   <Pressable 
@@ -624,7 +627,7 @@ export default function ProfileScreen() {
                       <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.accent}20` }]}>
                         <Globe size={20} color={Colors.dark.accent} />
                       </View>
-                      <Text style={styles.settingText}>Dil</Text>
+                      <Text style={styles.settingText}>{t('profile.language')}</Text>
                     </View>
                     <ChevronRight size={20} color={Colors.dark.textSecondary} />
                   </Pressable>
@@ -632,7 +635,7 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.settingsSection}>
-                <Text style={styles.settingsSectionTitle}>Bildirimler</Text>
+                <Text style={styles.settingsSectionTitle}>{t('profile.notifications')}</Text>
                 <GlassPanel style={styles.settingsCard}>
                   <Pressable 
                     style={styles.settingItem}
@@ -647,7 +650,7 @@ export default function ProfileScreen() {
                       <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.warning}20` }]}>
                         <Bell size={20} color={Colors.dark.warning} />
                       </View>
-                      <Text style={styles.settingText}>Bildirim Ayarları</Text>
+                      <Text style={styles.settingText}>{t('profile.notificationSettings')}</Text>
                     </View>
                     <ChevronRight size={20} color={Colors.dark.textSecondary} />
                   </Pressable>
@@ -655,14 +658,14 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.settingsSection}>
-                <Text style={styles.settingsSectionTitle}>Hesap</Text>
+                <Text style={styles.settingsSectionTitle}>{t('profile.account')}</Text>
                 <GlassPanel style={styles.settingsCard}>
                   <Pressable style={styles.settingItem}>
                     <View style={styles.settingLeft}>
                       <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.primary}20` }]}>
                         <User size={20} color={Colors.dark.primary} />
                       </View>
-                      <Text style={styles.settingText}>Profil Düzenle</Text>
+                      <Text style={styles.settingText}>{t('profile.editProfile')}</Text>
                     </View>
                     <ChevronRight size={20} color={Colors.dark.textSecondary} />
                   </Pressable>
@@ -672,7 +675,7 @@ export default function ProfileScreen() {
                       <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.accent}20` }]}>
                         <Shield size={20} color={Colors.dark.accent} />
                       </View>
-                      <Text style={styles.settingText}>Gizlilik</Text>
+                      <Text style={styles.settingText}>{t('profile.privacy')}</Text>
                     </View>
                     <ChevronRight size={20} color={Colors.dark.textSecondary} />
                   </Pressable>
@@ -680,10 +683,10 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.settingsSection}>
-                <Text style={styles.settingsSectionTitle}>Hakkında</Text>
+                <Text style={styles.settingsSectionTitle}>{t('profile.about')}</Text>
                 <GlassPanel style={styles.aboutSettingsCard}>
-                  <Text style={styles.aboutSettingsText}>Cinematch v1.0.0</Text>
-                  <Text style={styles.aboutSettingsSubtext}>© 2025 Cinematch. Tüm hakları saklıdır.</Text>
+                  <Text style={styles.aboutSettingsText}>{t('profile.aboutVersion')}</Text>
+                  <Text style={styles.aboutSettingsSubtext}>{t('profile.copyright')}</Text>
                 </GlassPanel>
               </View>
             </ScrollView>
@@ -701,14 +704,14 @@ export default function ProfileScreen() {
           <Pressable style={styles.modalBackdrop} onPress={() => setShowEditProfileModal(false)} />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Profili Düzenle</Text>
+              <Text style={styles.modalTitle}>{t('profile.editProfile')}</Text>
               <Pressable onPress={() => setShowEditProfileModal(false)}>
                 <Text style={styles.modalClose}>✕</Text>
               </Pressable>
             </View>
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <View style={styles.editSection}>
-                <Text style={styles.editLabel}>Profil Fotoğrafı</Text>
+                <Text style={styles.editLabel}>{t('profile.profilePhoto')}</Text>
                 <Pressable style={styles.editAvatarContainer}>
                   <Text style={styles.editAvatarText}>🎬</Text>
                   <View style={styles.editAvatarOverlay}>
@@ -717,29 +720,29 @@ export default function ProfileScreen() {
                 </Pressable>
               </View>
               <View style={styles.editSection}>
-                <Text style={styles.editLabel}>Kullanıcı Adı</Text>
+                <Text style={styles.editLabel}>{t('profile.username')}</Text>
                 <View style={styles.editInput}>
                   <Text style={styles.editInputText}>{username}</Text>
                 </View>
               </View>
               <View style={styles.editSection}>
-                <Text style={styles.editLabel}>Bio</Text>
+                <Text style={styles.editLabel}>{t('profile.bio')}</Text>
                 <View style={[styles.editInput, styles.editInputMultiline]}>
                   <Text style={styles.editInputText}>{bio}</Text>
                 </View>
               </View>
               <View style={styles.editSection}>
-                <Text style={styles.editLabel}>Sosyal Medya</Text>
+                <Text style={styles.editLabel}>{t('profile.socialMedia')}</Text>
                 <GlassPanel style={styles.socialLinksCard}>
                   <View style={styles.socialLinkItem}>
                     <Text style={styles.socialLinkIcon}>🐦</Text>
-                    <Text style={styles.socialLinkText}>Twitter bağlantısı ekle</Text>
+                    <Text style={styles.socialLinkText}>{t('profile.addTwitter')}</Text>
                     <ChevronRight size={20} color={Colors.dark.textSecondary} />
                   </View>
                   <View style={styles.settingDivider} />
                   <View style={styles.socialLinkItem}>
                     <Text style={styles.socialLinkIcon}>📷</Text>
-                    <Text style={styles.socialLinkText}>Instagram bağlantısı ekle</Text>
+                    <Text style={styles.socialLinkText}>{t('profile.addInstagram')}</Text>
                     <ChevronRight size={20} color={Colors.dark.textSecondary} />
                   </View>
                 </GlassPanel>
@@ -747,7 +750,7 @@ export default function ProfileScreen() {
             </ScrollView>
             <View style={styles.modalFooter}>
               <Pressable style={styles.saveButton} onPress={() => setShowEditProfileModal(false)}>
-                <Text style={styles.saveButtonText}>Kaydet</Text>
+                <Text style={styles.saveButtonText}>{t('common.save')}</Text>
               </Pressable>
             </View>
           </View>
@@ -764,22 +767,22 @@ export default function ProfileScreen() {
           <Pressable style={styles.modalBackdrop} onPress={() => setShowSocialModal(false)} />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sosyal</Text>
+              <Text style={styles.modalTitle}>{t('profile.social')}</Text>
               <Pressable onPress={() => setShowSocialModal(false)}>
                 <Text style={styles.modalClose}>✕</Text>
               </Pressable>
             </View>
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <View style={styles.socialSection}>
-                <Text style={styles.socialSectionTitle}>Arkadaşlar (24)</Text>
+                <Text style={styles.socialSectionTitle}>{t('profile.friendsCount').replace('{count}', '24')}</Text>
                 {[1, 2, 3, 4, 5].map((i) => (
                   <GlassPanel key={i} style={styles.friendCard}>
                     <View style={styles.friendAvatar}>
                       <Text style={styles.friendAvatarText}>🎭</Text>
                     </View>
                     <View style={styles.friendInfo}>
-                      <Text style={styles.friendName}>Kullanıcı {i}</Text>
-                      <Text style={styles.friendActivity}>2 saat önce aktif</Text>
+                      <Text style={styles.friendName}>{t('profile.user')} {i}</Text>
+                      <Text style={styles.friendActivity}>{t('profile.activeAgo').replace('{time}', '2 saat')}</Text>
                     </View>
                     <Pressable style={styles.friendButton}>
                       <MessageCircle size={20} color={Colors.dark.primary} />
@@ -788,18 +791,18 @@ export default function ProfileScreen() {
                 ))}
               </View>
               <View style={styles.socialSection}>
-                <Text style={styles.socialSectionTitle}>Arkadaş Önerileri</Text>
+                <Text style={styles.socialSectionTitle}>{t('profile.friendSuggestions')}</Text>
                 {[1, 2, 3].map((i) => (
                   <GlassPanel key={i} style={styles.friendCard}>
                     <View style={styles.friendAvatar}>
                       <Text style={styles.friendAvatarText}>🎪</Text>
                     </View>
                     <View style={styles.friendInfo}>
-                      <Text style={styles.friendName}>Öneri {i}</Text>
-                      <Text style={styles.friendActivity}>5 ortak arkadaş</Text>
+                      <Text style={styles.friendName}>{t('profile.suggestion')} {i}</Text>
+                      <Text style={styles.friendActivity}>{t('profile.mutualFriends').replace('{count}', '5')}</Text>
                     </View>
                     <Pressable style={styles.addFriendButton}>
-                      <Text style={styles.addFriendButtonText}>Ekle</Text>
+                      <Text style={styles.addFriendButtonText}>{t('profile.add')}</Text>
                     </Pressable>
                   </GlassPanel>
                 ))}
@@ -819,7 +822,7 @@ export default function ProfileScreen() {
           <Pressable style={styles.modalBackdrop} onPress={() => setShowLanguageModal(false)} />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Dil Seçin</Text>
+              <Text style={styles.modalTitle}>{t('profile.selectLanguage')}</Text>
               <Pressable onPress={() => setShowLanguageModal(false)}>
                 <Text style={styles.modalClose}>✕</Text>
               </Pressable>
