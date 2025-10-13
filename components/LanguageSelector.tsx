@@ -40,9 +40,15 @@ export default function LanguageSelector() {
   const handleConfirm = async () => {
     if (selectedLanguage) {
       console.log('[LanguageSelector] Changing language to:', selectedLanguage);
-      await changeLanguage(selectedLanguage);
-      setShowConfirmModal(false);
-      setSelectedLanguage(null);
+      try {
+        await changeLanguage(selectedLanguage);
+        console.log('[LanguageSelector] Language changed successfully');
+      } catch (error) {
+        console.error('[LanguageSelector] Failed to change language:', error);
+      } finally {
+        setShowConfirmModal(false);
+        setSelectedLanguage(null);
+      }
     }
   };
 
