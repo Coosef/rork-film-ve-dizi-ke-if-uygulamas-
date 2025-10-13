@@ -7,7 +7,7 @@ import { LibraryProvider } from "@/contexts/LibraryContext";
 import { PreferencesProvider, usePreferences } from "@/contexts/PreferencesContext";
 import { SearchHistoryProvider } from "@/contexts/SearchHistoryContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
-import { LanguageProvider } from "@/contexts/LanguageContext";
+import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import Colors from "@/constants/colors";
 import { trpc, trpcClient } from "@/lib/trpc";
 
@@ -35,6 +35,7 @@ function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
   const preferencesContext = usePreferences();
+  const languageContext = useLanguage();
   const [appReady, setAppReady] = React.useState(false);
   const [hasNavigated, setHasNavigated] = React.useState(false);
 
@@ -78,14 +79,16 @@ function RootLayoutNav() {
     }
   }, [preferencesContext, appReady, segments, router, hasNavigated]);
 
-  if (!appReady || !preferencesContext) {
+  if (!appReady || !preferencesContext || !languageContext) {
     return null;
   }
+
+  const { t } = languageContext;
 
   return (
     <Stack 
       screenOptions={{ 
-        headerBackTitle: "Geri",
+        headerBackTitle: t('common.back'),
         headerStyle: {
           backgroundColor: Colors.dark.backgroundSecondary,
         },
@@ -97,9 +100,9 @@ function RootLayoutNav() {
     >
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="smart-lists" options={{ headerShown: true, title: 'Akıllı Listeler' }} />
+      <Stack.Screen name="smart-lists" options={{ headerShown: true, title: t('smartLists.title') }} />
       <Stack.Screen name="search" options={{ headerShown: false }} />
-      <Stack.Screen name="export-data" options={{ headerShown: true, title: 'Veri Dışa Aktar' }} />
+      <Stack.Screen name="export-data" options={{ headerShown: true, title: t('export.title') }} />
       <Stack.Screen 
         name="movie/[id]" 
         options={{ 

@@ -1,8 +1,11 @@
 import { Stack } from 'expo-router';
 import React from 'react';
 import Colors from '@/constants/colors';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ProfileLayout() {
+  const { t } = useLanguage();
+
   return (
     <Stack
       screenOptions={{
@@ -17,7 +20,7 @@ export default function ProfileLayout() {
       <Stack.Screen 
         name="index" 
         options={{
-          title: 'Profil',
+          title: t('tabs.profile'),
         }}
       />
     </Stack>
