@@ -69,10 +69,11 @@ export const [LanguageProvider, useLanguage] = createContextHook(() => {
   const changeLanguage = useCallback(
     async (language: Language) => {
       console.log('[Language] Changing language to:', language);
-      setCurrentLanguage(language);
       try {
         await AsyncStorage.setItem(LANGUAGE_KEY, language);
-        console.log('[Language] Language saved successfully');
+        console.log('[Language] Language saved to storage');
+        setCurrentLanguage(language);
+        console.log('[Language] Language state updated successfully');
       } catch (error) {
         console.error('[Language] Failed to save language:', error);
       }
