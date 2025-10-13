@@ -36,32 +36,46 @@ function RootLayoutNav() {
   const segments = useSegments();
   const preferencesContext = usePreferences();
   const [appReady, setAppReady] = React.useState(false);
+  const [hasNavigated, setHasNavigated] = React.useState(false);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!appReady && preferencesContext) {
+        console.log('[RootLayout] Force ready after timeout');
+        setAppReady(true);
+        SplashScreen.hideAsync();
+      }
+    }, 1000);
+
     if (preferencesContext && !preferencesContext.isLoading) {
       setAppReady(true);
       SplashScreen.hideAsync();
+      clearTimeout(timer);
     }
-  }, [preferencesContext]);
+
+    return () => clearTimeout(timer);
+  }, [preferencesContext, appReady]);
 
   useEffect(() => {
-    if (!appReady || !preferencesContext || preferencesContext.isLoading) {
+    if (!appReady || !preferencesContext || hasNavigated) {
       return;
     }
 
     const inOnboarding = segments[0] === 'onboarding';
-    const hasCompletedOnboarding = preferencesContext.preferences.hasCompletedOnboarding;
+    const hasCompletedOnboarding = preferencesContext.preferences?.hasCompletedOnboarding;
 
     console.log('[RootLayout] Onboarding check:', { hasCompletedOnboarding, inOnboarding, segments });
 
     if (!hasCompletedOnboarding && !inOnboarding) {
+      setHasNavigated(true);
       router.replace('/onboarding');
     } else if (hasCompletedOnboarding && inOnboarding) {
+      setHasNavigated(true);
       router.replace('/(tabs)/(home)');
     }
-  }, [preferencesContext, appReady, segments, router]);
+  }, [preferencesContext, appReady, segments, router, hasNavigated]);
 
-  if (!appReady || !preferencesContext || preferencesContext.isLoading) {
+  if (!appReady) {
     return null;
   }
 

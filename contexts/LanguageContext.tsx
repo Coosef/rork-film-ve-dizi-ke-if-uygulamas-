@@ -27,7 +27,13 @@ export const [LanguageProvider, useLanguage] = createContextHook(() => {
 
   const loadLanguage = async () => {
     try {
-      const stored = await AsyncStorage.getItem(LANGUAGE_KEY);
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => resolve(null), 500);
+      });
+      
+      const storagePromise = AsyncStorage.getItem(LANGUAGE_KEY);
+      const stored = await Promise.race([storagePromise, timeoutPromise]) as string | null;
+      
       if (stored) {
         console.log('[Language] Loaded language from storage:', stored);
         setCurrentLanguage(stored as Language);

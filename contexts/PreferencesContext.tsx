@@ -26,7 +26,13 @@ export const [PreferencesProvider, usePreferences] = createContextHook(() => {
 
   const loadPreferences = async () => {
     try {
-      const stored = await AsyncStorage.getItem(PREFERENCES_KEY);
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => resolve(null), 500);
+      });
+      
+      const storagePromise = AsyncStorage.getItem(PREFERENCES_KEY);
+      const stored = await Promise.race([storagePromise, timeoutPromise]) as string | null;
+      
       if (stored) {
         const parsed = JSON.parse(stored);
         setPreferences(parsed);

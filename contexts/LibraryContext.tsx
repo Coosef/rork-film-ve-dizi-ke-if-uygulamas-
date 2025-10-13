@@ -16,7 +16,13 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
 
   const loadLibrary = async () => {
     try {
-      const stored = await AsyncStorage.getItem(LIBRARY_KEY);
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => resolve(null), 500);
+      });
+      
+      const storagePromise = AsyncStorage.getItem(LIBRARY_KEY);
+      const stored = await Promise.race([storagePromise, timeoutPromise]) as string | null;
+      
       if (stored) {
         const parsed = JSON.parse(stored);
         setInteractions(parsed);
