@@ -28,16 +28,17 @@ export default function ProfileScreen() {
   const { getInteractionsByType, getStats } = useLibrary();
   const { preferences, updatePreferences } = usePreferences();
   const insets = useSafeAreaInsets();
-  const stats = getStats();
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
-  const [username, setUsername] = useState('Film Sever');
-  const [bio, setBio] = useState('Sinema tutkunu');
-  const [recentShows, setRecentShows] = useState<Array<{ show: TVMazeShow; interaction: any }>>([]);
+  const [username] = useState('Film Sever');
+  const [bio] = useState('Sinema tutkunu');
+  const [recentShows, setRecentShows] = useState<{ show: TVMazeShow; interaction: any }[]>([]);
   const [loadingShows, setLoadingShows] = useState(true);
+  
+  const stats = getStats();
 
   const recentlyWatched = getInteractionsByType('watched')
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -45,6 +46,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     loadRecentShows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recentlyWatched.length]);
 
   const loadRecentShows = async () => {
@@ -64,7 +66,7 @@ export default function ProfileScreen() {
         })
       );
       
-      const validShows = showsData.filter(item => item !== null) as Array<{ show: TVMazeShow; interaction: any }>;
+      const validShows = showsData.filter(item => item !== null) as { show: TVMazeShow; interaction: any }[];
       console.log('[Profile] Loaded shows:', validShows.length);
       setRecentShows(validShows);
     } catch (error) {

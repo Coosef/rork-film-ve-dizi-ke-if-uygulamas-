@@ -1,7 +1,9 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { Language, translations, TranslationKeys } from '@/locales';
-import { usePreferences } from '@/contexts/PreferencesContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const LANGUAGE_KEY = '@ui_language';
 
 type TranslationPath<T> = T extends object
   ? {
@@ -16,15 +18,28 @@ type TranslationPath<T> = T extends object
 type TranslationKey = TranslationPath<TranslationKeys>;
 
 export const [LanguageProvider, useLanguage] = createContextHook(() => {
-  const { preferences, updatePreferences } = usePreferences();
-  const [currentLanguage, setCurrentLanguage] = useState<Language>(preferences.uiLanguage as Language || 'tr');
+  const [currentLanguage, setCurrentLanguage] = useState<Language>('tr');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (preferences.uiLanguage) {
-      console.log('[Language] Setting language from preferences:', preferences.uiLanguage);
-      setCurrentLanguage(preferences.uiLanguage as Language);
+    loadLanguage();
+  }, []);
+
+  const loadLanguage = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(LANGUAGE_KEY);
+      if (stored) {
+        console.log('[Language] Loaded language from storage:', stored);
+        setCurrentLanguage(stored as Language);
+      } else {
+        console.log('[Language] No stored language, using default: tr');
+      }
+    } catch (error) {
+      console.error('[Language] Failed to load language:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [preferences.uiLanguage]);
+  };
 
   const t = useCallback(
     (key: TranslationKey): string => {
@@ -49,19 +64,24 @@ export const [LanguageProvider, useLanguage] = createContextHook(() => {
     async (language: Language) => {
       console.log('[Language] Changing language to:', language);
       setCurrentLanguage(language);
-      await updatePreferences({ uiLanguage: language });
-      console.log('[Language] Language changed successfully');
+      try {
+        await AsyncStorage.setItem(LANGUAGE_KEY, language);
+        console.log('[Language] Language saved successfully');
+      } catch (error) {
+        console.error('[Language] Failed to save language:', error);
+      }
     },
-    [updatePreferences]
+    []
   );
 
   return useMemo(
     () => ({
       language: currentLanguage,
+      isLoading,
       t,
       changeLanguage,
       availableLanguages: Object.keys(translations) as Language[],
     }),
-    [currentLanguage, t, changeLanguage]
+    [currentLanguage, isLoading, t, changeLanguage]
   );
 });

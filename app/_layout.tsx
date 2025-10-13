@@ -97,8 +97,8 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <LanguageProvider>
-          <PreferencesProvider>
+        <PreferencesProvider>
+          <LanguageProvider>
             <LibraryProvider>
               <SearchHistoryProvider>
                 <NotificationProvider>
@@ -108,8 +108,8 @@ export default function RootLayout() {
                 </NotificationProvider>
               </SearchHistoryProvider>
             </LibraryProvider>
-          </PreferencesProvider>
-        </LanguageProvider>
+          </LanguageProvider>
+        </PreferencesProvider>
       </trpc.Provider>
     </QueryClientProvider>
   );
