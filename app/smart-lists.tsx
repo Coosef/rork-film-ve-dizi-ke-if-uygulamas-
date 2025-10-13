@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
 import MovieCard from '@/components/MovieCard';
 import { useLibrary } from '@/contexts/LibraryContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getShowDetails, convertShowToMediaItem } from '@/services/tvmaze';
 import { MediaItem } from '@/types/tvmaze';
 
@@ -21,6 +22,7 @@ type SmartListType = 'bingeWorthy' | 'hiddenGems' | 'quickWatch' | 'newSeasons' 
 export default function SmartListsScreen() {
   const router = useRouter();
   const { getInteractionsByType } = useLibrary();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
 
   const allInteractions = useMemo(() => {
@@ -99,8 +101,8 @@ export default function SmartListsScreen() {
   const lists = [
     {
       key: 'bingeWorthy' as SmartListType,
-      title: 'Maraton Yapılacaklar',
-      description: 'Yüksek puanlı, uzun diziler',
+      title: t('smartLists.bingeWorthy'),
+      description: t('smartLists.bingeWorthyDesc'),
       icon: TrendingUp,
       color: Colors.dark.primary,
       count: smartLists.bingeWorthy.length,
@@ -108,8 +110,8 @@ export default function SmartListsScreen() {
     },
     {
       key: 'hiddenGems' as SmartListType,
-      title: 'Gizli Hazineler',
-      description: 'Az bilinen ama harika diziler',
+      title: t('smartLists.hiddenGems'),
+      description: t('smartLists.hiddenGemsDesc'),
       icon: Star,
       color: '#FFD700',
       count: smartLists.hiddenGems.length,
@@ -117,8 +119,8 @@ export default function SmartListsScreen() {
     },
     {
       key: 'quickWatch' as SmartListType,
-      title: 'Hızlı İzlenenler',
-      description: 'Kısa ve kaliteli diziler',
+      title: t('smartLists.quickWatch'),
+      description: t('smartLists.quickWatchDesc'),
       icon: Zap,
       color: Colors.dark.accent,
       count: smartLists.quickWatch.length,
@@ -126,8 +128,8 @@ export default function SmartListsScreen() {
     },
     {
       key: 'newSeasons' as SmartListType,
-      title: 'Yeni Sezonu Çıkanlar',
-      description: 'Son 3 ayda izlediğiniz diziler',
+      title: t('smartLists.newSeasons'),
+      description: t('smartLists.newSeasonsDesc'),
       icon: Sparkles,
       color: '#9333EA',
       count: smartLists.newSeasons.length,
@@ -135,8 +137,8 @@ export default function SmartListsScreen() {
     },
     {
       key: 'abandoned' as SmartListType,
-      title: 'Yarıda Bıraktıklarınız',
-      description: 'Başladığınız ama bitirmediniz',
+      title: t('smartLists.abandoned'),
+      description: t('smartLists.abandonedDesc'),
       icon: Clock,
       color: Colors.dark.warning,
       count: smartLists.abandoned.length,
@@ -144,8 +146,8 @@ export default function SmartListsScreen() {
     },
     {
       key: 'quickFinish' as SmartListType,
-      title: 'Tek Sezonda Bitebilenler',
-      description: '10 bölüm veya daha az',
+      title: t('smartLists.quickFinish'),
+      description: t('smartLists.quickFinishDesc'),
       icon: Eye,
       color: '#10B981',
       count: smartLists.quickFinish.length,
@@ -159,13 +161,13 @@ export default function SmartListsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Akıllı Listeler', headerShown: true }} />
+      <Stack.Screen options={{ title: t('smartLists.title'), headerShown: true }} />
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={[styles.header, { paddingTop: insets.top }]}>
-            <Text style={styles.headerTitle}>Akıllı Listeler</Text>
+            <Text style={styles.headerTitle}>{t('smartLists.title')}</Text>
             <Text style={styles.headerSubtitle}>
-              İzleme alışkanlıklarınıza göre özel listeler
+              {t('smartLists.subtitle')}
             </Text>
           </View>
 
@@ -191,7 +193,7 @@ export default function SmartListsScreen() {
 
                 {list.count === 0 ? (
                   <View style={styles.emptyList}>
-                    <Text style={styles.emptyListText}>Bu listede henüz dizi yok</Text>
+                    <Text style={styles.emptyListText}>{t('smartLists.emptyList')}</Text>
                   </View>
                 ) : (
                   <SmartListMovies movieIds={movieIds} onMoviePress={handleMoviePress} />
@@ -217,10 +219,12 @@ function SmartListMovies({ movieIds, onMoviePress }: { movieIds: number[]; onMov
     enabled: movieIds.length > 0,
   });
 
+  const { t } = useLanguage();
+  
   if (moviesQuery.isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('smartLists.loading')}</Text>
       </View>
     );
   }

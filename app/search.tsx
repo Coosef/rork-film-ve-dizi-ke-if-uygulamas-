@@ -20,10 +20,12 @@ import GlassPanel from '@/components/GlassPanel';
 import { searchShows, GENRES } from '@/services/tvmaze';
 import { MediaItem } from '@/types/tvmaze';
 import { useSearchHistory } from '@/contexts/SearchHistoryContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function SearchScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
@@ -165,7 +167,7 @@ export default function SearchScreen() {
             <SearchIcon size={20} color={Colors.dark.textSecondary} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Dizi ara..."
+              placeholder={t('search.placeholder')}
               placeholderTextColor={Colors.dark.textSecondary}
               value={searchQuery}
               onChangeText={handleSearch}
@@ -184,7 +186,7 @@ export default function SearchScreen() {
               onPress={() => setShowFilters(true)}
             >
               <SlidersHorizontal size={20} color={hasActiveFilters ? Colors.dark.text : Colors.dark.textSecondary} />
-              <Text style={[styles.filterButtonText, hasActiveFilters && styles.filterButtonTextActive]}>Filtrele</Text>
+              <Text style={[styles.filterButtonText, hasActiveFilters && styles.filterButtonTextActive]}>{t('common.filter')}</Text>
               {hasActiveFilters && <View style={styles.filterDot} />}
             </Pressable>
           )}
@@ -196,10 +198,10 @@ export default function SearchScreen() {
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionHeaderLeft}>
                   <Clock size={20} color={Colors.dark.textSecondary} />
-                  <Text style={styles.sectionTitle}>Son Aramalar</Text>
+                  <Text style={styles.sectionTitle}>{t('search.recentSearches')}</Text>
                 </View>
                 <Pressable onPress={clearHistory}>
-                  <Text style={styles.clearText}>Temizle</Text>
+                  <Text style={styles.clearText}>{t('search.clear')}</Text>
                 </Pressable>
               </View>
               <View style={styles.chipContainer}>
@@ -227,7 +229,7 @@ export default function SearchScreen() {
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionHeaderLeft}>
                   <TrendingUp size={20} color={Colors.dark.textSecondary} />
-                  <Text style={styles.sectionTitle}>Popüler Aramalar</Text>
+                  <Text style={styles.sectionTitle}>{t('search.popularSearches')}</Text>
                 </View>
               </View>
               <View style={styles.chipContainer}>
@@ -276,7 +278,7 @@ export default function SearchScreen() {
                     {sortBy !== 'relevance' && (
                       <View style={styles.activeFilterChip}>
                         <Text style={styles.activeFilterText}>
-                          {sortBy === 'rating' ? 'Puan' : sortBy === 'year' ? 'Yıl' : 'Başlık'}
+                          {sortBy === 'rating' ? t('discover.rating') : sortBy === 'year' ? t('discover.year') : t('search.sortByTitle')}
                         </Text>
                         <Pressable onPress={() => setSortBy('relevance')}>
                           <X size={14} color={Colors.dark.text} />
@@ -284,33 +286,33 @@ export default function SearchScreen() {
                       </View>
                     )}
                     <Pressable style={styles.clearFiltersChip} onPress={clearFilters}>
-                      <Text style={styles.clearFiltersText}>Tümünü Temizle</Text>
+                      <Text style={styles.clearFiltersText}>{t('discover.clearAll')}</Text>
                     </Pressable>
                   </ScrollView>
                 </View>
               )}
               {isSearching ? (
                 <View style={styles.loadingContainer}>
-                  <Text style={styles.loadingText}>Aranıyor...</Text>
+                  <Text style={styles.loadingText}>{t('search.searching')}</Text>
                 </View>
               ) : results.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyText}>
-                    {rawResults.length === 0 ? 'Sonuç bulunamadı' : 'Filtrelerinize uygun sonuç yok'}
+                    {rawResults.length === 0 ? t('search.noResults') : t('search.noFilterResults')}
                   </Text>
                   <Text style={styles.emptySubtext}>
-                    {rawResults.length === 0 ? 'Farklı bir arama terimi deneyin' : 'Filtreleri değiştirmeyi deneyin'}
+                    {rawResults.length === 0 ? t('search.tryDifferent') : t('search.tryChangingFilters')}
                   </Text>
                   {hasActiveFilters && (
                     <Pressable style={styles.clearFiltersButton} onPress={clearFilters}>
-                      <Text style={styles.clearFiltersButtonText}>Filtreleri Temizle</Text>
+                      <Text style={styles.clearFiltersButtonText}>{t('search.clearFilters')}</Text>
                     </Pressable>
                   )}
                 </View>
               ) : (
                 <>
                   <Text style={styles.resultsCount}>
-                    {results.length} sonuç bulundu {rawResults.length !== results.length && `(${rawResults.length} toplam)`}
+                    {results.length} {t('search.resultsFound')} {rawResults.length !== results.length && `(${rawResults.length} ${t('search.total')})`}
                   </Text>
                   <FlatList
                     data={results}
@@ -340,20 +342,20 @@ export default function SearchScreen() {
             <Pressable style={styles.modalBackdrop} onPress={() => setShowFilters(false)} />
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Filtrele ve Sırala</Text>
+                <Text style={styles.modalTitle}>{t('search.filterAndSort')}</Text>
                 <Pressable onPress={() => setShowFilters(false)}>
                   <X size={24} color={Colors.dark.text} />
                 </Pressable>
               </View>
               <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
                 <View style={styles.filterSection}>
-                  <Text style={styles.filterSectionTitle}>Sıralama</Text>
+                  <Text style={styles.filterSectionTitle}>{t('search.sorting')}</Text>
                   <GlassPanel style={styles.sortOptions}>
                     {[
-                      { key: 'relevance' as const, label: 'İlgililik', icon: TrendingUp },
-                      { key: 'rating' as const, label: 'Puan', icon: Star },
-                      { key: 'year' as const, label: 'Yıl', icon: Calendar },
-                      { key: 'title' as const, label: 'Başlık', icon: SearchIcon },
+                      { key: 'relevance' as const, label: t('search.relevance'), icon: TrendingUp },
+                      { key: 'rating' as const, label: t('discover.rating'), icon: Star },
+                      { key: 'year' as const, label: t('discover.year'), icon: Calendar },
+                      { key: 'title' as const, label: t('search.sortByTitle'), icon: SearchIcon },
                     ].map((option, index) => (
                       <React.Fragment key={option.key}>
                         <Pressable
@@ -391,10 +393,10 @@ export default function SearchScreen() {
                 
                 <View style={styles.filterSection}>
                   <View style={styles.filterSectionHeader}>
-                    <Text style={styles.filterSectionTitle}>Türler</Text>
+                    <Text style={styles.filterSectionTitle}>{t('library.genres')}</Text>
                     {selectedGenres.length > 0 && (
                       <Pressable onPress={() => setSelectedGenres([])}>
-                        <Text style={styles.clearText}>Temizle</Text>
+                        <Text style={styles.clearText}>{t('search.clear')}</Text>
                       </Pressable>
                     )}
                   </View>
@@ -422,7 +424,7 @@ export default function SearchScreen() {
                 </View>
                 
                 <View style={styles.filterSection}>
-                  <Text style={styles.filterSectionTitle}>Minimum Puan</Text>
+                  <Text style={styles.filterSectionTitle}>{t('discover.minimumRating')}</Text>
                   <View style={styles.ratingGrid}>
                     {[0, 5, 6, 7, 8, 9].map(rating => (
                       <Pressable
@@ -439,7 +441,7 @@ export default function SearchScreen() {
                             minRating === rating && styles.ratingChipTextActive,
                           ]}
                         >
-                          {rating === 0 ? 'Tümü' : `⭐ ${rating}+`}
+                          {rating === 0 ? t('discover.all') : `⭐ ${rating}+`}
                         </Text>
                       </Pressable>
                     ))}
@@ -447,10 +449,10 @@ export default function SearchScreen() {
                 </View>
                 
                 <View style={styles.filterSection}>
-                  <Text style={styles.filterSectionTitle}>Yıl Aralığı</Text>
+                  <Text style={styles.filterSectionTitle}>{t('discover.yearRange')}</Text>
                   <View style={styles.yearContainer}>
                     <View style={styles.yearInputContainer}>
-                      <Text style={styles.yearLabel}>Başlangıç</Text>
+                      <Text style={styles.yearLabel}>{t('discover.start')}</Text>
                       <View style={styles.yearButtons}>
                         <Pressable 
                           style={styles.yearButton}
@@ -468,7 +470,7 @@ export default function SearchScreen() {
                       </View>
                     </View>
                     <View style={styles.yearInputContainer}>
-                      <Text style={styles.yearLabel}>Bitiş</Text>
+                      <Text style={styles.yearLabel}>{t('discover.end')}</Text>
                       <View style={styles.yearButtons}>
                         <Pressable 
                           style={styles.yearButton}
@@ -491,14 +493,14 @@ export default function SearchScreen() {
               <View style={styles.modalFooter}>
                 {hasActiveFilters && (
                   <Pressable style={styles.clearAllButton} onPress={clearFilters}>
-                    <Text style={styles.clearAllButtonText}>Tümünü Temizle</Text>
+                    <Text style={styles.clearAllButtonText}>{t('discover.clearAll')}</Text>
                   </Pressable>
                 )}
                 <Pressable 
                   style={styles.applyButton}
                   onPress={() => setShowFilters(false)}
                 >
-                  <Text style={styles.applyButtonText}>Uygula ({results.length} sonuç)</Text>
+                  <Text style={styles.applyButtonText}>{t('search.apply')} ({results.length} {t('search.results')})</Text>
                 </Pressable>
               </View>
             </View>
