@@ -34,23 +34,23 @@ const queryClient = new QueryClient({
 function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
-  const { preferences, isLoading } = usePreferences();
+  const preferencesContext = usePreferences();
   const [appReady, setAppReady] = React.useState(false);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (preferencesContext && !preferencesContext.isLoading) {
       setAppReady(true);
       SplashScreen.hideAsync();
     }
-  }, [isLoading]);
+  }, [preferencesContext]);
 
   useEffect(() => {
-    if (!appReady || isLoading) {
+    if (!appReady || !preferencesContext || preferencesContext.isLoading) {
       return;
     }
 
     const inOnboarding = segments[0] === 'onboarding';
-    const hasCompletedOnboarding = preferences.hasCompletedOnboarding;
+    const hasCompletedOnboarding = preferencesContext.preferences.hasCompletedOnboarding;
 
     console.log('[RootLayout] Onboarding check:', { hasCompletedOnboarding, inOnboarding, segments });
 
@@ -59,9 +59,9 @@ function RootLayoutNav() {
     } else if (hasCompletedOnboarding && inOnboarding) {
       router.replace('/(tabs)/(home)');
     }
-  }, [preferences.hasCompletedOnboarding, appReady, isLoading, segments, router]);
+  }, [preferencesContext, appReady, segments, router]);
 
-  if (!appReady || isLoading) {
+  if (!appReady || !preferencesContext || preferencesContext.isLoading) {
     return null;
   }
 

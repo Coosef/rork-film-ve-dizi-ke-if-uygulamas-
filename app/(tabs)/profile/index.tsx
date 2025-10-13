@@ -25,8 +25,9 @@ import { TVMazeShow } from '@/types/tvmaze';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { getInteractionsByType, getStats } = useLibrary();
-  const { preferences, updatePreferences } = usePreferences();
+  const libraryContext = useLibrary();
+  const preferencesContext = usePreferences();
+  const languageContext = useLanguage();
   const insets = useSafeAreaInsets();
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -36,22 +37,9 @@ export default function ProfileScreen() {
   const [username] = useState('Film Sever');
   const [bio] = useState('Sinema tutkunu');
   const [recentShows, setRecentShows] = useState<{ show: TVMazeShow; interaction: any }[]>([]);
-  const [loadingShows, setLoadingShows] = useState(true);
-  
-  const stats = getStats();
 
-  const recentlyWatched = getInteractionsByType('watched')
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 6);
-
-  useEffect(() => {
-    loadRecentShows();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recentlyWatched.length]);
-
-  const loadRecentShows = async () => {
+  const loadRecentShows = async (recentlyWatched: any[]) => {
     try {
-      setLoadingShows(true);
       console.log('[Profile] Loading recent shows:', recentlyWatched.length);
       
       const showsData = await Promise.all(
@@ -71,10 +59,29 @@ export default function ProfileScreen() {
       setRecentShows(validShows);
     } catch (error) {
       console.error('[Profile] Error loading recent shows:', error);
-    } finally {
-      setLoadingShows(false);
     }
   };
+
+  useEffect(() => {
+    if (!libraryContext) return;
+    const recentlyWatched = libraryContext.getInteractionsByType('watched')
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 6);
+    loadRecentShows(recentlyWatched);
+  }, [libraryContext]);
+
+  if (!libraryContext || !preferencesContext || !languageContext) {
+    return null;
+  }
+
+  const { getInteractionsByType, getStats } = libraryContext;
+  const { preferences, updatePreferences } = preferencesContext;
+  
+  const stats = getStats();
+
+  const recentlyWatched = getInteractionsByType('watched')
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 6);
 
   const statCards = [
     {
