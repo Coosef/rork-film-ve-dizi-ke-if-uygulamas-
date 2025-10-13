@@ -26,6 +26,7 @@ import Animated, {
 import Colors from '@/constants/colors';
 import GenreBadge from '@/components/GenreBadge';
 import { useLibrary } from '@/contexts/LibraryContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getDiscoverStack, getShowsByGenre, GENRES } from '@/services/tvmaze';
 import { MediaItem } from '@/types/tvmaze';
 
@@ -38,6 +39,7 @@ const ROTATION_ANGLE = 10;
 export default function DiscoverScreen() {
   const router = useRouter();
   const { addInteraction, getInteraction, removeInteraction } = useLibrary();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedCards, setSwipedCards] = useState<{ index: number; direction: 'left' | 'right' }[]>([]);
@@ -305,7 +307,7 @@ export default function DiscoverScreen() {
   if (discoverQuery.isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -314,14 +316,14 @@ export default function DiscoverScreen() {
     if (discoverQuery.isFetching) {
       return (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Yükleniyor...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       );
     }
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyTitle}>Tüm filmler gösterildi!</Text>
-        <Text style={styles.emptyText}>Yeni filmler için geri gelin</Text>
+        <Text style={styles.emptyTitle}>{t('discover.allMoviesShown')}</Text>
+        <Text style={styles.emptyText}>{t('discover.comeBackLater')}</Text>
       </View>
     );
   }
@@ -331,7 +333,7 @@ export default function DiscoverScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.headerTitle}>Keşfet</Text>
+            <Text style={styles.headerTitle}>{t('discover.title')}</Text>
             <Text style={styles.headerSubtitle}>
               {currentIndex + 1} / {movies.length}
             </Text>
@@ -373,7 +375,7 @@ export default function DiscoverScreen() {
               </View>
             )}
             <Pressable style={styles.clearAllButton} onPress={clearAllFilters}>
-              <Text style={styles.clearAllText}>Tümünü Temizle</Text>
+              <Text style={styles.clearAllText}>{t('discover.clearAll')}</Text>
             </Pressable>
           </View>
         )}
@@ -433,11 +435,11 @@ export default function DiscoverScreen() {
             />
             
             <Animated.View style={[styles.likeStamp, likeStampStyle]}>
-              <Text style={styles.stampText}>BEĞEN</Text>
+              <Text style={styles.stampText}>{t('discover.like')}</Text>
             </Animated.View>
             
             <Animated.View style={[styles.nopeStamp, nopeStampStyle]}>
-              <Text style={styles.stampText}>GEÇ</Text>
+              <Text style={styles.stampText}>{t('discover.pass')}</Text>
             </Animated.View>
 
             <View style={styles.cardInfo}>
@@ -510,14 +512,14 @@ export default function DiscoverScreen() {
           <Pressable onPress={(e) => e.stopPropagation()}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Tür Seç</Text>
+                <Text style={styles.modalTitle}>{t('discover.selectGenre')}</Text>
                 <Pressable onPress={() => setShowGenreModal(false)}>
                   <X size={24} color={Colors.dark.text} />
                 </Pressable>
               </View>
               <ScrollView style={styles.genreList} showsVerticalScrollIndicator={false}>
                 <View style={styles.filterSectionContainer}>
-                  <Text style={styles.filterSectionTitle}>Tür</Text>
+                  <Text style={styles.filterSectionTitle}>{t('discover.genre')}</Text>
                   <View style={styles.genreGrid}>
                     {GENRES.map(genre => (
                       <Pressable
@@ -542,7 +544,7 @@ export default function DiscoverScreen() {
                 </View>
 
                 <View style={styles.filterSectionContainer}>
-                  <Text style={styles.filterSectionTitle}>Minimum Puan</Text>
+                  <Text style={styles.filterSectionTitle}>{t('discover.minimumRating')}</Text>
                   <View style={styles.ratingGrid}>
                     {[0, 5, 6, 7, 8, 9].map(rating => (
                       <Pressable
@@ -559,7 +561,7 @@ export default function DiscoverScreen() {
                             minRating === rating && styles.ratingItemTextActive,
                           ]}
                         >
-                          {rating === 0 ? 'Tümü' : `⭐ ${rating}+`}
+                          {rating === 0 ? t('discover.all') : `⭐ ${rating}+`}
                         </Text>
                       </Pressable>
                     ))}
@@ -567,10 +569,10 @@ export default function DiscoverScreen() {
                 </View>
 
                 <View style={styles.filterSectionContainer}>
-                  <Text style={styles.filterSectionTitle}>Yıl Aralığı</Text>
+                  <Text style={styles.filterSectionTitle}>{t('discover.yearRange')}</Text>
                   <View style={styles.yearContainer}>
                     <View style={styles.yearInputContainer}>
-                      <Text style={styles.yearLabel}>Başlangıç</Text>
+                      <Text style={styles.yearLabel}>{t('discover.start')}</Text>
                       <View style={styles.yearButtons}>
                         <Pressable 
                           style={styles.yearButton}
@@ -588,7 +590,7 @@ export default function DiscoverScreen() {
                       </View>
                     </View>
                     <View style={styles.yearInputContainer}>
-                      <Text style={styles.yearLabel}>Bitiş</Text>
+                      <Text style={styles.yearLabel}>{t('discover.end')}</Text>
                       <View style={styles.yearButtons}>
                         <Pressable 
                           style={styles.yearButton}
@@ -611,19 +613,19 @@ export default function DiscoverScreen() {
                       style={styles.yearPreset}
                       onPress={() => { setMinYear(2020); setMaxYear(new Date().getFullYear()); }}
                     >
-                      <Text style={styles.yearPresetText}>Son 5 Yıl</Text>
+                      <Text style={styles.yearPresetText}>{t('discover.last5Years')}</Text>
                     </Pressable>
                     <Pressable 
                       style={styles.yearPreset}
                       onPress={() => { setMinYear(2010); setMaxYear(new Date().getFullYear()); }}
                     >
-                      <Text style={styles.yearPresetText}>Son 10 Yıl</Text>
+                      <Text style={styles.yearPresetText}>{t('discover.last10Years')}</Text>
                     </Pressable>
                     <Pressable 
                       style={styles.yearPreset}
                       onPress={() => { setMinYear(1900); setMaxYear(new Date().getFullYear()); }}
                     >
-                      <Text style={styles.yearPresetText}>Tümü</Text>
+                      <Text style={styles.yearPresetText}>{t('discover.all')}</Text>
                     </Pressable>
                   </View>
                 </View>

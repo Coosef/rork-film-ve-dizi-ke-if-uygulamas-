@@ -20,6 +20,7 @@ import MovieShelf from '@/components/MovieShelf';
 
 import { useLibrary } from '@/contexts/LibraryContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   getTrending,
   getPopular,
@@ -40,6 +41,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { addInteraction, getInteractionsByType, interactions } = useLibrary();
   const { isLoading: preferencesLoading, preferences } = usePreferences();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -288,7 +290,7 @@ export default function HomeScreen() {
   if (trendingQuery.isLoading || preferencesLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Yükleniyor...</Text>
+        <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
   }
@@ -300,7 +302,7 @@ export default function HomeScreen() {
           <Search size={20} color={Colors.dark.textSecondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Dizi ara..."
+            placeholder={t('home.searchPlaceholder')}
             placeholderTextColor={Colors.dark.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -321,11 +323,11 @@ export default function HomeScreen() {
       >
         {isSearching ? (
           <View style={styles.searchResults}>
-            <Text style={styles.searchTitle}>Arama Sonuçları</Text>
+            <Text style={styles.searchTitle}>{t('home.searchResults')}</Text>
             {searchQuery_data.isLoading ? (
-              <Text style={styles.loadingText}>Aranıyor...</Text>
+              <Text style={styles.loadingText}>{t('home.searching')}</Text>
             ) : searchResults.length === 0 ? (
-              <Text style={styles.emptyText}>Sonuç bulunamadı</Text>
+              <Text style={styles.emptyText}>{t('home.noResults')}</Text>
             ) : (
               <MovieShelf
                 title=""
@@ -356,7 +358,7 @@ export default function HomeScreen() {
                 <View style={styles.heroActions}>
                   <Pressable style={styles.playButton} onPress={handlePlayTrailer}>
                     <Play size={20} color={Colors.dark.background} fill={Colors.dark.background} />
-                    <Text style={styles.playButtonText}>Fragman İzle</Text>
+                    <Text style={styles.playButtonText}>{t('home.watchTrailer')}</Text>
                   </Pressable>
                   <Pressable style={styles.iconButton} onPress={handleAddToWatchlist}>
                     <Plus size={24} color={Colors.dark.text} />
@@ -375,7 +377,7 @@ export default function HomeScreen() {
 
         {continueWatchingShows.length > 0 && (
           <View style={styles.continueWatchingSection}>
-            <Text style={styles.continueWatchingTitle}>İzlemeye Devam Et</Text>
+            <Text style={styles.continueWatchingTitle}>{t('home.continueWatching')}</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -413,7 +415,7 @@ export default function HomeScreen() {
                     <View style={styles.continueWatchingContent}>
                       <View style={styles.continueWatchingBadge}>
                         <Clock size={12} color={Colors.dark.primary} />
-                        <Text style={styles.continueWatchingBadgeText}>Devam Et</Text>
+                        <Text style={styles.continueWatchingBadgeText}>{t('home.continue')}</Text>
                       </View>
                       <Text style={styles.continueWatchingShowTitle} numberOfLines={2}>
                         {show.name}
@@ -440,7 +442,7 @@ export default function HomeScreen() {
                           color={Colors.dark.background}
                           fill={Colors.dark.background}
                         />
-                        <Text style={styles.continueWatchingButtonText}>Devam Et</Text>
+                        <Text style={styles.continueWatchingButtonText}>{t('home.continue')}</Text>
                       </Pressable>
                     </View>
                   </Pressable>
@@ -456,10 +458,10 @@ export default function HomeScreen() {
               <View style={styles.shelfHeader}>
                 <View style={styles.shelfTitleContainer}>
                   <Sparkles size={20} color={Colors.dark.primary} />
-                  <Text style={styles.shelfTitle}>Sizin İçin Öneriler</Text>
+                  <Text style={styles.shelfTitle}>{t('home.forYou')}</Text>
                   {useAIRecommendations && interactions.length >= 3 && (
                     <View style={styles.aiPoweredBadge}>
-                      <Text style={styles.aiPoweredText}>AI</Text>
+                      <Text style={styles.aiPoweredText}>{t('home.aiPowered')}</Text>
                     </View>
                   )}
                 </View>
@@ -469,7 +471,7 @@ export default function HomeScreen() {
                     onPress={() => setUseAIRecommendations(!useAIRecommendations)}
                   >
                     <Text style={styles.toggleAIText}>
-                      {useAIRecommendations ? 'Klasik' : 'AI'}
+                      {useAIRecommendations ? t('home.classic') : t('home.aiPowered')}
                     </Text>
                   </Pressable>
                 )}
@@ -483,23 +485,23 @@ export default function HomeScreen() {
           )}
           {newReleasesQuery.data && newReleasesQuery.data.length > 0 && (
             <MovieShelf
-              title="Yeni Çıkanlar"
+              title={t('home.newReleases')}
               movies={(newReleasesQuery.data || []).map(convertShowToMediaItem)}
               onMoviePress={handleShowPress}
             />
           )}
           <MovieShelf
-            title="Trend Diziler"
+            title={t('home.trending')}
             movies={(trendingQuery.data || []).map(convertShowToMediaItem)}
             onMoviePress={handleShowPress}
           />
           <MovieShelf
-            title="Popüler"
+            title={t('home.popular')}
             movies={(popularQuery.data || []).map(convertShowToMediaItem)}
             onMoviePress={handleShowPress}
           />
           <MovieShelf
-            title="En Yüksek Puanlılar"
+            title={t('home.topRated')}
             movies={(topRatedQuery.data || []).map(convertShowToMediaItem)}
             onMoviePress={handleShowPress}
           />

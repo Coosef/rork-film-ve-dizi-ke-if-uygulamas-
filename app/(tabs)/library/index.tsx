@@ -17,6 +17,7 @@ import Colors from '@/constants/colors';
 import MovieCard from '@/components/MovieCard';
 import GlassPanel from '@/components/GlassPanel';
 import { useLibrary } from '@/contexts/LibraryContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getShowDetails, convertShowToMediaItem, GENRES } from '@/services/tvmaze';
 import { MediaItem } from '@/types/tvmaze';
 
@@ -26,6 +27,7 @@ type SortType = 'title' | 'rating' | 'date' | 'popularity';
 export default function LibraryScreen() {
   const router = useRouter();
   const { getInteractionsByType } = useLibrary();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabType | 'smart'>('watchlist');
   const [refreshing, setRefreshing] = useState(false);
@@ -151,37 +153,37 @@ export default function LibraryScreen() {
   }, [allInteractions]);
 
   const tabs: { key: TabType | 'smart'; label: string; count: number }[] = [
-    { key: 'watchlist', label: 'İzlenecekler', count: getInteractionsByType('watchlist').length },
-    { key: 'watching', label: 'İzlemeye Devam', count: getInteractionsByType('watching').length },
-    { key: 'watched', label: 'İzlenenler', count: getInteractionsByType('watched').length },
-    { key: 'favorite', label: 'Favoriler', count: getInteractionsByType('favorite').length },
-    { key: 'smart', label: 'Akıllı Listeler', count: smartLists.newSeasons.length + smartLists.abandoned.length + smartLists.quickFinish.length },
+    { key: 'watchlist', label: t('library.watchlist'), count: getInteractionsByType('watchlist').length },
+    { key: 'watching', label: t('library.watching'), count: getInteractionsByType('watching').length },
+    { key: 'watched', label: t('library.watched'), count: getInteractionsByType('watched').length },
+    { key: 'favorite', label: t('library.favorites'), count: getInteractionsByType('favorite').length },
+    { key: 'smart', label: t('library.smartLists'), count: smartLists.newSeasons.length + smartLists.abandoned.length + smartLists.quickFinish.length },
   ];
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyTitle}>Henüz film eklemediniz</Text>
+      <Text style={styles.emptyTitle}>{t('library.empty')}</Text>
       <Text style={styles.emptyText}>
-        {activeTab === 'watchlist' && 'İzlemek istediğiniz filmleri buraya ekleyin'}
-        {activeTab === 'watching' && 'İzlemeye devam ettiğiniz diziler burada görünecek'}
-        {activeTab === 'watched' && 'İzlediğiniz filmleri işaretleyin'}
-        {activeTab === 'favorite' && 'Favori filmlerinizi buraya ekleyin'}
+        {activeTab === 'watchlist' && t('library.emptyWatchlist')}
+        {activeTab === 'watching' && t('library.emptyWatching')}
+        {activeTab === 'watched' && t('library.emptyWatched')}
+        {activeTab === 'favorite' && t('library.emptyFavorites')}
       </Text>
     </View>
   );
 
   const sortOptions = [
-    { key: 'title' as SortType, label: 'Başlık', icon: AlignLeft },
-    { key: 'rating' as SortType, label: 'Puan', icon: Star },
-    { key: 'date' as SortType, label: 'Tarih', icon: Calendar },
-    { key: 'popularity' as SortType, label: 'Popülerlik', icon: TrendingUp },
+    { key: 'title' as SortType, label: t('library.sortByTitle'), icon: AlignLeft },
+    { key: 'rating' as SortType, label: t('library.sortByRating'), icon: Star },
+    { key: 'date' as SortType, label: t('library.sortByDate'), icon: Calendar },
+    { key: 'popularity' as SortType, label: t('library.sortByPopularity'), icon: TrendingUp },
   ];
 
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Kütüphane</Text>
+          <Text style={styles.headerTitle}>{t('library.title')}</Text>
           <View style={styles.headerActions}>
             <Pressable 
               style={[styles.headerButton, selectedGenres.length > 0 && styles.headerButtonActive]}
@@ -205,7 +207,7 @@ export default function LibraryScreen() {
         {movies.length > 0 && activeTab !== 'smart' && (
           <View style={styles.completionCard}>
             <View style={styles.completionHeader}>
-              <Text style={styles.completionTitle}>Tamamlanma Oranı</Text>
+              <Text style={styles.completionTitle}>{t('library.completionRate')}</Text>
               <Text style={styles.completionPercentage}>
                 {((movies.filter(m => {
                   const interaction = getInteractionsByType(activeTab).find(i => i.mediaId === m.id);
@@ -230,7 +232,7 @@ export default function LibraryScreen() {
               {movies.filter(m => {
                 const interaction = getInteractionsByType(activeTab).find(i => i.mediaId === m.id);
                 return interaction?.watchProgress?.watchedEpisodes === interaction?.watchProgress?.totalEpisodes && (interaction?.watchProgress?.totalEpisodes || 0) > 0;
-              }).length} / {movies.length} dizi tamamlandı
+              }).length} / {movies.length} {t('profile.shows')} {t('library.completed')}
             </Text>
           </View>
         )}
@@ -250,7 +252,7 @@ export default function LibraryScreen() {
               </Pressable>
             ))}
             <Pressable style={styles.clearFiltersButton} onPress={clearFilters}>
-              <Text style={styles.clearFiltersText}>Temizle</Text>
+              <Text style={styles.clearFiltersText}>{t('library.clear')}</Text>
             </Pressable>
           </ScrollView>
         </View>
@@ -286,12 +288,12 @@ export default function LibraryScreen() {
             style={styles.smartListsButton}
             onPress={() => router.push('/smart-lists')}
           >
-            <Text style={styles.smartListsButtonText}>Akıllı Listeleri Görüntüle</Text>
+            <Text style={styles.smartListsButtonText}>{t('library.viewSmartLists')}</Text>
           </Pressable>
         </View>
       ) : moviesQueries.isLoading ? (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Yükleniyor...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       ) : movies.length === 0 ? (
         renderEmpty()
@@ -327,7 +329,7 @@ export default function LibraryScreen() {
           <Pressable style={styles.modalBackdrop} onPress={() => setShowFilterModal(false)} />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filtrele</Text>
+              <Text style={styles.modalTitle}>{t('library.filter')}</Text>
               <Pressable onPress={() => setShowFilterModal(false)}>
                 <X size={24} color={Colors.dark.text} />
               </Pressable>
@@ -335,10 +337,10 @@ export default function LibraryScreen() {
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <View style={styles.filterSection}>
                 <View style={styles.filterSectionHeader}>
-                  <Text style={styles.filterSectionTitle}>Türler</Text>
+                  <Text style={styles.filterSectionTitle}>{t('library.genres')}</Text>
                   {selectedGenres.length > 0 && (
                     <Pressable onPress={clearFilters}>
-                      <Text style={styles.clearText}>Temizle</Text>
+                      <Text style={styles.clearText}>{t('library.clear')}</Text>
                     </Pressable>
                   )}
                 </View>
@@ -370,7 +372,7 @@ export default function LibraryScreen() {
                 style={styles.applyButton}
                 onPress={() => setShowFilterModal(false)}
               >
-                <Text style={styles.applyButtonText}>Uygula ({movies.length} sonuç)</Text>
+                <Text style={styles.applyButtonText}>{t('library.apply')} ({movies.length} {t('library.results')})</Text>
               </Pressable>
             </View>
           </View>
@@ -387,7 +389,7 @@ export default function LibraryScreen() {
           <Pressable style={styles.modalBackdrop} onPress={() => setShowSortModal(false)} />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Sırala</Text>
+              <Text style={styles.modalTitle}>{t('library.sort')}</Text>
               <Pressable onPress={() => setShowSortModal(false)}>
                 <X size={24} color={Colors.dark.text} />
               </Pressable>
