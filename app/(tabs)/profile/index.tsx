@@ -13,6 +13,7 @@ import {
   Image,
   Share,
   Alert,
+  TextInput,
 } from 'react-native';
 import Colors from '@/constants/colors';
 import GlassPanel from '@/components/GlassPanel';
@@ -34,8 +35,10 @@ export default function ProfileScreen() {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
-  const [username] = useState('Film Sever');
-  const [bio] = useState('Sinema tutkunu');
+  const [username, setUsername] = useState('Film Sever');
+  const [bio, setBio] = useState('Sinema tutkunu');
+  const [editUsername, setEditUsername] = useState('');
+  const [editBio, setEditBio] = useState('');
   const [recentShows, setRecentShows] = useState<{ show: TVMazeShow; interaction: any }[]>([]);
 
   const loadRecentShows = async (recentlyWatched: any[]) => {
@@ -79,10 +82,6 @@ export default function ProfileScreen() {
   const { t } = languageContext;
   
   const stats = getStats();
-
-  const recentlyWatched = getInteractionsByType('watched')
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 6);
 
   const statCards = [
     {
@@ -135,6 +134,12 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleEditProfile = () => {
+    setEditUsername(username);
+    setEditBio(bio);
+    setShowEditProfileModal(true);
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -155,7 +160,7 @@ export default function ProfileScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
         <View style={styles.header}>
-          <Pressable style={styles.avatarContainer} onPress={() => setShowEditProfileModal(true)}>
+          <Pressable style={styles.avatarContainer} onPress={handleEditProfile}>
             <Text style={styles.avatarText}>🎬</Text>
             <View style={styles.avatarBadge}>
               <Camera size={16} color={Colors.dark.text} />
@@ -164,7 +169,7 @@ export default function ProfileScreen() {
           <View style={styles.userInfo}>
             <View style={styles.usernameRow}>
               <Text style={styles.username}>{username}</Text>
-              <Pressable onPress={() => setShowEditProfileModal(true)}>
+              <Pressable onPress={handleEditProfile}>
                 <Edit3 size={20} color={Colors.dark.primary} />
               </Pressable>
             </View>
@@ -721,15 +726,26 @@ export default function ProfileScreen() {
               </View>
               <View style={styles.editSection}>
                 <Text style={styles.editLabel}>{t('profile.username')}</Text>
-                <View style={styles.editInput}>
-                  <Text style={styles.editInputText}>{username}</Text>
-                </View>
+                <TextInput
+                  style={[styles.editInput, styles.editInputText]}
+                  value={editUsername}
+                  onChangeText={setEditUsername}
+                  placeholder={username}
+                  placeholderTextColor={Colors.dark.textSecondary}
+                />
               </View>
               <View style={styles.editSection}>
                 <Text style={styles.editLabel}>{t('profile.bio')}</Text>
-                <View style={[styles.editInput, styles.editInputMultiline]}>
-                  <Text style={styles.editInputText}>{bio}</Text>
-                </View>
+                <TextInput
+                  style={[styles.editInput, styles.editInputMultiline, styles.editInputText]}
+                  value={editBio}
+                  onChangeText={setEditBio}
+                  placeholder={bio}
+                  placeholderTextColor={Colors.dark.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
               </View>
               <View style={styles.editSection}>
                 <Text style={styles.editLabel}>{t('profile.socialMedia')}</Text>
@@ -749,7 +765,21 @@ export default function ProfileScreen() {
               </View>
             </ScrollView>
             <View style={styles.modalFooter}>
-              <Pressable style={styles.saveButton} onPress={() => setShowEditProfileModal(false)}>
+              <Pressable 
+                style={styles.saveButton} 
+                onPress={() => {
+                  if (editUsername.trim()) {
+                    setUsername(editUsername.trim());
+                  }
+                  if (editBio.trim()) {
+                    setBio(editBio.trim());
+                  }
+                  setEditUsername('');
+                  setEditBio('');
+                  setShowEditProfileModal(false);
+                  Alert.alert(t('common.success'), t('profile.profileUpdated'));
+                }}
+              >
                 <Text style={styles.saveButtonText}>{t('common.save')}</Text>
               </Pressable>
             </View>

@@ -19,6 +19,7 @@ export default {
     ok: 'Tamam',
     share: 'Paylaş',
     export: 'Dışa Aktar',
+    success: 'Başarılı',
   },
   tabs: {
     home: 'Ana Sayfa',
@@ -226,6 +227,7 @@ export default {
     shareMessage: '🎬 Cinematch\'te {watched} dizi izledim!\n⭐ Ortalama puanım: {rating}\n🔥 Güncel serim: {streak} gün\n\nSen de katıl ve dizi keşfetmeye başla!',
     shareTitle: 'Cinematch İstatistiklerim',
     shareError: 'Paylaşım sırasında bir hata oluştu',
+    profileUpdated: 'Profil başarıyla güncellendi',
     monday: 'Pzt',
     tuesday: 'Sal',
     wednesday: 'Çar',
