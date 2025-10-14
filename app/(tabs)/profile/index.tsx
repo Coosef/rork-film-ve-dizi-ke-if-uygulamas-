@@ -35,6 +35,7 @@ export default function ProfileScreen() {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showSocialModal, setShowSocialModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [username, setUsername] = useState('Film Sever');
   const [bio, setBio] = useState('Sinema tutkunu');
   const [editUsername, setEditUsername] = useState('');
@@ -665,7 +666,15 @@ export default function ProfileScreen() {
               <View style={styles.settingsSection}>
                 <Text style={styles.settingsSectionTitle}>{t('profile.account')}</Text>
                 <GlassPanel style={styles.settingsCard}>
-                  <Pressable style={styles.settingItem}>
+                  <Pressable 
+                    style={styles.settingItem}
+                    onPress={() => {
+                      setShowSettingsModal(false);
+                      setTimeout(() => {
+                        handleEditProfile();
+                      }, 300);
+                    }}
+                  >
                     <View style={styles.settingLeft}>
                       <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.primary}20` }]}>
                         <User size={20} color={Colors.dark.primary} />
@@ -675,7 +684,15 @@ export default function ProfileScreen() {
                     <ChevronRight size={20} color={Colors.dark.textSecondary} />
                   </Pressable>
                   <View style={styles.settingDivider} />
-                  <Pressable style={styles.settingItem}>
+                  <Pressable 
+                    style={styles.settingItem}
+                    onPress={() => {
+                      setShowSettingsModal(false);
+                      setTimeout(() => {
+                        setShowPrivacyModal(true);
+                      }, 300);
+                    }}
+                  >
                     <View style={styles.settingLeft}>
                       <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.accent}20` }]}>
                         <Shield size={20} color={Colors.dark.accent} />
@@ -859,6 +876,164 @@ export default function ProfileScreen() {
             </View>
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <LanguageSelector />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showPrivacyModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPrivacyModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowPrivacyModal(false)} />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('profile.privacy')}</Text>
+              <Pressable onPress={() => setShowPrivacyModal(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </Pressable>
+            </View>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.settingsSection}>
+                <Text style={styles.settingsSectionTitle}>{t('profile.profileVisibility')}</Text>
+                <GlassPanel style={styles.settingsCard}>
+                  <View style={styles.settingItem}>
+                    <View style={styles.settingLeft}>
+                      <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.primary}20` }]}>
+                        <User size={20} color={Colors.dark.primary} />
+                      </View>
+                      <Text style={styles.settingText}>{t('profile.publicProfile')}</Text>
+                    </View>
+                    <Switch
+                      value={preferences.publicProfile !== false}
+                      onValueChange={(value) => updatePreferences({ publicProfile: value })}
+                      trackColor={{ false: Colors.dark.border, true: Colors.dark.primary }}
+                      thumbColor={Colors.dark.text}
+                    />
+                  </View>
+                  <View style={styles.settingDivider} />
+                  <View style={styles.settingItem}>
+                    <View style={styles.settingLeft}>
+                      <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.accent}20` }]}>
+                        <Heart size={20} color={Colors.dark.accent} />
+                      </View>
+                      <Text style={styles.settingText}>{t('profile.showWatchlist')}</Text>
+                    </View>
+                    <Switch
+                      value={preferences.showWatchlist !== false}
+                      onValueChange={(value) => updatePreferences({ showWatchlist: value })}
+                      trackColor={{ false: Colors.dark.border, true: Colors.dark.primary }}
+                      thumbColor={Colors.dark.text}
+                    />
+                  </View>
+                  <View style={styles.settingDivider} />
+                  <View style={styles.settingItem}>
+                    <View style={styles.settingLeft}>
+                      <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.warning}20` }]}>
+                        <Star size={20} color={Colors.dark.warning} />
+                      </View>
+                      <Text style={styles.settingText}>{t('profile.showRatings')}</Text>
+                    </View>
+                    <Switch
+                      value={preferences.showRatings !== false}
+                      onValueChange={(value) => updatePreferences({ showRatings: value })}
+                      trackColor={{ false: Colors.dark.border, true: Colors.dark.primary }}
+                      thumbColor={Colors.dark.text}
+                    />
+                  </View>
+                </GlassPanel>
+              </View>
+
+              <View style={styles.settingsSection}>
+                <Text style={styles.settingsSectionTitle}>{t('profile.dataSharing')}</Text>
+                <GlassPanel style={styles.settingsCard}>
+                  <View style={styles.settingItem}>
+                    <View style={styles.settingLeft}>
+                      <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.success}20` }]}>
+                        <TrendingUp size={20} color={Colors.dark.success} />
+                      </View>
+                      <Text style={styles.settingText}>{t('profile.shareActivity')}</Text>
+                    </View>
+                    <Switch
+                      value={preferences.shareActivity !== false}
+                      onValueChange={(value) => updatePreferences({ shareActivity: value })}
+                      trackColor={{ false: Colors.dark.border, true: Colors.dark.primary }}
+                      thumbColor={Colors.dark.text}
+                    />
+                  </View>
+                  <View style={styles.settingDivider} />
+                  <View style={styles.settingItem}>
+                    <View style={styles.settingLeft}>
+                      <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.primary}20` }]}>
+                        <BarChart3 size={20} color={Colors.dark.primary} />
+                      </View>
+                      <Text style={styles.settingText}>{t('profile.shareStats')}</Text>
+                    </View>
+                    <Switch
+                      value={preferences.shareStats !== false}
+                      onValueChange={(value) => updatePreferences({ shareStats: value })}
+                      trackColor={{ false: Colors.dark.border, true: Colors.dark.primary }}
+                      thumbColor={Colors.dark.text}
+                    />
+                  </View>
+                </GlassPanel>
+              </View>
+
+              <View style={styles.settingsSection}>
+                <Text style={styles.settingsSectionTitle}>{t('profile.accountSecurity')}</Text>
+                <GlassPanel style={styles.settingsCard}>
+                  <Pressable 
+                    style={styles.settingItem}
+                    onPress={() => {
+                      Alert.alert(
+                        t('profile.changePassword'),
+                        t('profile.changePasswordDesc'),
+                        [
+                          { text: t('common.cancel'), style: 'cancel' },
+                          { text: t('common.ok'), onPress: () => console.log('[Profile] Change password') }
+                        ]
+                      );
+                    }}
+                  >
+                    <View style={styles.settingLeft}>
+                      <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.warning}20` }]}>
+                        <Shield size={20} color={Colors.dark.warning} />
+                      </View>
+                      <Text style={styles.settingText}>{t('profile.changePassword')}</Text>
+                    </View>
+                    <ChevronRight size={20} color={Colors.dark.textSecondary} />
+                  </Pressable>
+                  <View style={styles.settingDivider} />
+                  <Pressable 
+                    style={styles.settingItem}
+                    onPress={() => {
+                      Alert.alert(
+                        t('profile.deleteAccount'),
+                        t('profile.deleteAccountDesc'),
+                        [
+                          { text: t('common.cancel'), style: 'cancel' },
+                          { 
+                            text: t('common.delete'), 
+                            style: 'destructive',
+                            onPress: () => console.log('[Profile] Delete account') 
+                          }
+                        ]
+                      );
+                    }}
+                  >
+                    <View style={styles.settingLeft}>
+                      <View style={[styles.settingIcon, { backgroundColor: `${Colors.dark.error}20` }]}>
+                        <User size={20} color={Colors.dark.error} />
+                      </View>
+                      <Text style={[styles.settingText, { color: Colors.dark.error }]}>{t('profile.deleteAccount')}</Text>
+                    </View>
+                    <ChevronRight size={20} color={Colors.dark.textSecondary} />
+                  </Pressable>
+                </GlassPanel>
+              </View>
             </ScrollView>
           </View>
         </View>

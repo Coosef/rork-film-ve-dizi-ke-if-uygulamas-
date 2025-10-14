@@ -53,4 +53,9 @@ export interface UserPreferences {
   hapticsEnabled: boolean;
   favoriteGenres: number[];
   hasCompletedOnboarding?: boolean;
+  publicProfile?: boolean;
+  showWatchlist?: boolean;
+  showRatings?: boolean;
+  shareActivity?: boolean;
+  shareStats?: boolean;
 }
