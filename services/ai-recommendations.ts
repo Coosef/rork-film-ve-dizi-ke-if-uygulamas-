@@ -34,6 +34,11 @@ export async function getAIRecommendations(
   try {
     console.log('[AI Recommendations] Generating recommendations for', input.userInteractions.length, 'interactions');
 
+    if (!process.env.EXPO_PUBLIC_TOOLKIT_URL) {
+      console.log('[AI Recommendations] Toolkit URL not configured, skipping AI recommendations');
+      return [];
+    }
+
     const favoriteShows = input.userInteractions
       .filter(i => i.type === 'favorite')
       .slice(0, 5);
@@ -55,6 +60,11 @@ export async function getAIRecommendations(
     const showsToAnalyze = input.availableShows
       .filter(show => !input.userInteractions.some(i => i.mediaId === show.id))
       .slice(0, 30);
+
+    if (showsToAnalyze.length === 0) {
+      console.log('[AI Recommendations] No shows to analyze');
+      return [];
+    }
 
     const prompt = `You are an expert TV show recommendation system. Analyze the user's viewing history and recommend shows from the available list.
 
@@ -86,8 +96,8 @@ Provide a score (0-100) for each recommendation and explain why it matches the u
 
     console.log('[AI Recommendations] Generated', result.recommendations.length, 'recommendations');
     return result.recommendations;
-  } catch (error) {
-    console.error('[AI Recommendations] Error:', error);
+  } catch {
+    console.log('[AI Recommendations] AI service unavailable, will use fallback recommendations');
     return [];
   }
 }
