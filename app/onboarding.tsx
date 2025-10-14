@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/colors';
 import { usePreferences } from '@/contexts/PreferencesContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { GENRES } from '@/services/tvmaze';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -22,6 +23,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function OnboardingScreen() {
   const router = useRouter();
   const { updatePreferences, preferences } = usePreferences();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const isReturningUser = preferences.hasCompletedOnboarding;
   
@@ -77,11 +79,13 @@ export default function OnboardingScreen() {
             <View style={styles.iconContainer}>
               <Sparkles size={48} color={Colors.dark.primary} />
             </View>
-            <Text style={styles.title}>{isReturningUser ? 'Tür Tercihleriniz' : 'Hoş Geldiniz!'}</Text>
+            <Text style={styles.title}>
+              {isReturningUser ? t('onboarding.genrePreferences') : t('onboarding.welcome')}
+            </Text>
             <Text style={styles.subtitle}>
               {isReturningUser 
-                ? 'Tercihlerinizi güncelleyin (en az 3 tür)'
-                : 'Size özel öneriler sunabilmemiz için en az 3 tür seçin'
+                ? t('onboarding.updatePreferences')
+                : t('onboarding.selectAtLeast3')
               }
             </Text>
           </View>
@@ -125,7 +129,7 @@ export default function OnboardingScreen() {
           <View style={styles.footer}>
             <View style={styles.progressContainer}>
               <Text style={styles.progressText}>
-                {selectedGenres.length} / 3 tür seçildi
+                {selectedGenres.length} / 3 {t('onboarding.genresSelected')}
               </Text>
               <View style={styles.progressBar}>
                 <View
@@ -150,7 +154,7 @@ export default function OnboardingScreen() {
                   !canContinue && styles.continueButtonTextDisabled,
                 ]}
               >
-                {isReturningUser ? 'Kaydet' : 'Başla'}
+                {isReturningUser ? t('onboarding.save') : t('onboarding.getStarted')}
               </Text>
             </Pressable>
           </View>

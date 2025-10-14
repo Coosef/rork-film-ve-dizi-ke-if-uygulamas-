@@ -257,12 +257,17 @@ export default {
     notAvailable: 'Actualmente no disponible en ninguna plataforma',
   },
   onboarding: {
-    welcome: 'Bienvenido',
+    welcome: '¡Bienvenido!',
     welcomeDescription: 'Personaliza tu experiencia de visualización',
     selectGenres: 'Selecciona tus géneros favoritos',
     selectGenresDescription: 'Elige al menos 3 géneros para obtener recomendaciones personalizadas',
     getStarted: 'Comenzar',
     skip: 'Omitir',
+    genrePreferences: 'Preferencias de género',
+    updatePreferences: 'Actualiza tus preferencias (al menos 3 géneros)',
+    selectAtLeast3: 'Elige al menos 3 géneros para obtener recomendaciones personalizadas',
+    genresSelected: 'géneros seleccionados',
+    save: 'Guardar',
   },
   stats: {
     title: 'Estadísticas',
