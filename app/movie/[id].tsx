@@ -423,9 +423,9 @@ export default function MovieDetailScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Videolar & Bağlantılar</Text>
               <View style={styles.videosContainer}>
-                {videos.map((video: any) => (
+                {videos.map((video: any, index: number) => (
                   <Pressable
-                    key={video.id}
+                    key={`video-${video.id}-${index}`}
                     style={styles.videoCard}
                     onPress={() => Linking.openURL(video.url)}
                   >
@@ -452,13 +452,13 @@ export default function MovieDetailScreen() {
           {seasons.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Sezonlar & Bölümler</Text>
-              {seasons.map((season: any) => {
+              {seasons.map((season: any, seasonIndex: number) => {
                 const seasonEpisodes = getEpisodesBySeason(season.number);
                 const isExpanded = expandedSeason === season.number;
                 const seasonEpisodeIds = seasonEpisodes.map((ep: any) => ep.id);
                 const allSeasonWatched = seasonEpisodeIds.length > 0 && seasonEpisodeIds.every((id: number) => isEpisodeWatched(movieId, 'tv', id));
                 return (
-                  <View key={season.id} style={styles.seasonCard}>
+                  <View key={`season-${season.id}-${seasonIndex}`} style={styles.seasonCard}>
                     <Pressable
                       style={styles.seasonHeader}
                       onPress={() => toggleSeason(season.number)}
@@ -493,11 +493,11 @@ export default function MovieDetailScreen() {
                     </Pressable>
                     {isExpanded && (
                       <View style={styles.episodesList}>
-                        {seasonEpisodes.map((episode: any) => {
+                        {seasonEpisodes.map((episode: any, episodeIndex: number) => {
                           const isWatched = isEpisodeWatched(movieId, 'tv', episode.id);
                           return (
                             <Pressable 
-                              key={episode.id} 
+                              key={`episode-${episode.id}-${episodeIndex}`} 
                               style={[styles.episodeCard, isWatched && styles.episodeCardWatched]}
                               onPress={() => handleToggleEpisodeWatched(episode.id)}
                             >
@@ -561,8 +561,8 @@ export default function MovieDetailScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Nerede İzleyebilirsiniz?</Text>
               <View style={styles.platformsContainer}>
-                {streamingProviders.map((provider: StreamingProvider) => (
-                  <View key={provider.providerId} style={styles.platformCard}>
+                {streamingProviders.map((provider: StreamingProvider, index: number) => (
+                  <View key={`provider-${provider.providerId}-${index}`} style={styles.platformCard}>
                     {provider.logoPath ? (
                       <Image
                         source={{ uri: provider.logoPath }}
@@ -774,8 +774,8 @@ export default function MovieDetailScreen() {
               <Text style={styles.sectionTitle}>Oyuncular</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={styles.castContainer}>
-                  {cast.map(actor => (
-                    <View key={actor.person.id} style={styles.castCard}>
+                  {cast.map((actor, actorIndex: number) => (
+                    <View key={`actor-${actor.person.id}-${actorIndex}`} style={styles.castCard}>
                       {actor.person.image?.medium ? (
                         <Image
                           source={{ uri: actor.person.image.medium }}
