@@ -12,10 +12,12 @@ import {
 import Colors from '@/constants/colors';
 import GlassPanel from '@/components/GlassPanel';
 import { useLibrary } from '@/contexts/LibraryContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function StatsScreen() {
   const router = useRouter();
   const { getInteractionsByType, interactions } = useLibrary();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
 
   const allInteractions = useMemo(() => interactions, [interactions]);
@@ -23,7 +25,11 @@ export default function StatsScreen() {
 
 
   const monthlyStats = useMemo(() => {
-    const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+    const months = [
+      t('stats.jan'), t('stats.feb'), t('stats.mar'), t('stats.apr'),
+      t('stats.may'), t('stats.jun'), t('stats.jul'), t('stats.aug'),
+      t('stats.sep'), t('stats.oct'), t('stats.nov'), t('stats.dec')
+    ];
     const currentMonth = new Date().getMonth();
     const monthData = [];
 
@@ -38,7 +44,7 @@ export default function StatsScreen() {
     }
 
     return monthData;
-  }, [allInteractions]);
+  }, [allInteractions, t]);
 
   const ratingDistribution = useMemo(() => {
     const distribution: Record<string, number> = {
