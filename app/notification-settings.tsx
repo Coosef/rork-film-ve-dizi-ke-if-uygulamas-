@@ -1,4 +1,4 @@
-import { useRouter, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { Bell, Clock, Sparkles, Volume2, Moon, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,11 +14,12 @@ import {
 import Colors from '@/constants/colors';
 import GlassPanel from '@/components/GlassPanel';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function NotificationSettingsScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { settings, hasPermission, updateSettings, requestPermissions } = useNotifications();
+  const { t } = useLanguage();
   const [showTimePickerModal, setShowTimePickerModal] = useState(false);
   const [timePickerType, setTimePickerType] = useState<'start' | 'end'>('start');
 
@@ -58,13 +59,13 @@ export default function NotificationSettingsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Bildirim Ayarları', headerShown: true }} />
+      <Stack.Screen options={{ title: t('notifications.settings'), headerShown: true }} />
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={[styles.header, { paddingTop: insets.top }]}>
-            <Text style={styles.headerTitle}>Bildirim Ayarları</Text>
+            <Text style={styles.headerTitle}>{t('notifications.settings')}</Text>
             <Text style={styles.headerSubtitle}>
-              Yeni bölümler ve öneriler hakkında bildirim al
+              {t('notificationSettings.subtitle')}
             </Text>
           </View>
 
@@ -75,9 +76,9 @@ export default function NotificationSettingsScreen() {
                   <Bell size={24} color={Colors.dark.primary} />
                 </View>
                 <View style={styles.settingInfo}>
-                  <Text style={styles.settingTitle}>Bildirimleri Etkinleştir</Text>
+                  <Text style={styles.settingTitle}>{t('notificationSettings.enableNotifications')}</Text>
                   <Text style={styles.settingDescription}>
-                    Tüm bildirimleri aç/kapat
+                    {t('notificationSettings.enableNotificationsDesc')}
                   </Text>
                 </View>
                 <Switch
@@ -92,14 +93,14 @@ export default function NotificationSettingsScreen() {
             {!hasPermission && (
               <GlassPanel style={styles.warningCard}>
                 <Text style={styles.warningText}>
-                  ⚠️ Bildirim izni verilmedi. Bildirimleri etkinleştirmek için izin vermeniz gerekiyor.
+                  ⚠️ {t('notificationSettings.permissionWarning')}
                 </Text>
               </GlassPanel>
             )}
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Bildirim Türleri</Text>
+            <Text style={styles.sectionTitle}>{t('notificationSettings.notificationTypes')}</Text>
             
             <GlassPanel style={styles.settingCard}>
               <View style={styles.settingHeader}>
@@ -107,9 +108,9 @@ export default function NotificationSettingsScreen() {
                   <Sparkles size={24} color={Colors.dark.accent} />
                 </View>
                 <View style={styles.settingInfo}>
-                  <Text style={styles.settingTitle}>Yeni Bölümler</Text>
+                  <Text style={styles.settingTitle}>{t('notifications.newEpisodes')}</Text>
                   <Text style={styles.settingDescription}>
-                    İzlediğin dizilerin yeni bölümleri çıktığında bildir
+                    {t('notificationSettings.newEpisodesDesc')}
                   </Text>
                 </View>
                 <Switch
@@ -128,9 +129,9 @@ export default function NotificationSettingsScreen() {
                   <Clock size={24} color={Colors.dark.warning} />
                 </View>
                 <View style={styles.settingInfo}>
-                  <Text style={styles.settingTitle}>Hatırlatıcılar</Text>
+                  <Text style={styles.settingTitle}>{t('notificationSettings.reminders')}</Text>
                   <Text style={styles.settingDescription}>
-                    İzlemeye devam ettiğin diziler için hatırlatıcılar
+                    {t('notificationSettings.remindersDesc')}
                   </Text>
                 </View>
                 <Switch
@@ -149,9 +150,9 @@ export default function NotificationSettingsScreen() {
                   <Volume2 size={24} color={Colors.dark.primary} />
                 </View>
                 <View style={styles.settingInfo}>
-                  <Text style={styles.settingTitle}>Öneriler</Text>
+                  <Text style={styles.settingTitle}>{t('notifications.recommendations')}</Text>
                   <Text style={styles.settingDescription}>
-                    Beğenebileceğin diziler hakkında öneriler
+                    {t('notificationSettings.recommendationsDesc')}
                   </Text>
                 </View>
                 <Switch
@@ -166,7 +167,7 @@ export default function NotificationSettingsScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Sessiz Saatler</Text>
+            <Text style={styles.sectionTitle}>{t('notificationSettings.quietHours')}</Text>
             
             <GlassPanel style={styles.settingCard}>
               <View style={styles.settingHeader}>
@@ -174,9 +175,9 @@ export default function NotificationSettingsScreen() {
                   <Moon size={24} color={Colors.dark.primary} />
                 </View>
                 <View style={styles.settingInfo}>
-                  <Text style={styles.settingTitle}>Sessiz Saatleri Etkinleştir</Text>
+                  <Text style={styles.settingTitle}>{t('notificationSettings.enableQuietHours')}</Text>
                   <Text style={styles.settingDescription}>
-                    Belirli saatlerde bildirim alma
+                    {t('notificationSettings.enableQuietHoursDesc')}
                   </Text>
                 </View>
                 <Switch
@@ -195,14 +196,14 @@ export default function NotificationSettingsScreen() {
                   style={styles.timePickerButton}
                   onPress={() => handleOpenTimePicker('start')}
                 >
-                  <Text style={styles.timePickerLabel}>Başlangıç</Text>
+                  <Text style={styles.timePickerLabel}>{t('discover.start')}</Text>
                   <Text style={styles.timePickerValue}>{settings.quietHoursStart}</Text>
                 </Pressable>
                 <Pressable 
                   style={styles.timePickerButton}
                   onPress={() => handleOpenTimePicker('end')}
                 >
-                  <Text style={styles.timePickerLabel}>Bitiş</Text>
+                  <Text style={styles.timePickerLabel}>{t('discover.end')}</Text>
                   <Text style={styles.timePickerValue}>{settings.quietHoursEnd}</Text>
                 </Pressable>
               </View>
@@ -221,7 +222,7 @@ export default function NotificationSettingsScreen() {
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
-                  {timePickerType === 'start' ? 'Başlangıç Saati' : 'Bitiş Saati'}
+                  {timePickerType === 'start' ? t('notificationSettings.startTime') : t('notificationSettings.endTime')}
                 </Text>
                 <Pressable onPress={() => setShowTimePickerModal(false)}>
                   <X size={24} color={Colors.dark.text} />
