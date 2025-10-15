@@ -20,6 +20,7 @@ import GlassPanel from '@/components/GlassPanel';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import LanguageSelector from '@/components/LanguageSelector';
 import { getShowDetails } from '@/services/tvmaze';
 import { TVMazeShow } from '@/types/tvmaze';
@@ -29,6 +30,7 @@ export default function ProfileScreen() {
   const libraryContext = useLibrary();
   const preferencesContext = usePreferences();
   const languageContext = useLanguage();
+  const authContext = useAuth();
   const insets = useSafeAreaInsets();
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -74,13 +76,14 @@ export default function ProfileScreen() {
     loadRecentShows(recentlyWatched);
   }, [libraryContext]);
 
-  if (!libraryContext || !preferencesContext || !languageContext) {
+  if (!libraryContext || !preferencesContext || !languageContext || !authContext) {
     return null;
   }
 
   const { getInteractionsByType, getStats } = libraryContext;
   const { preferences, updatePreferences } = preferencesContext;
   const { t } = languageContext;
+  const { signOut, user } = authContext;
   
   const stats = getStats();
 
@@ -478,6 +481,43 @@ export default function ProfileScreen() {
               <Text style={styles.featureText}>{t('profile.notificationSettings')}</Text>
               <ChevronRight size={20} color={Colors.dark.primary} />
             </Pressable>
+          </GlassPanel>
+        </View>
+
+        <View style={styles.section}>
+          <GlassPanel style={styles.logoutCard}>
+            <Pressable 
+              style={styles.logoutButton}
+              onPress={async () => {
+                Alert.alert(
+                  t('profile.logout'),
+                  'Are you sure you want to logout?',
+                  [
+                    {
+                      text: t('common.cancel'),
+                      style: 'cancel',
+                    },
+                    {
+                      text: t('profile.logout'),
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await signOut();
+                        } catch (error) {
+                          console.error('[Profile] Logout error:', error);
+                          Alert.alert(t('common.error'), 'Failed to logout');
+                        }
+                      },
+                    },
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.logoutText}>{t('profile.logout')}</Text>
+            </Pressable>
+            {user?.email && (
+              <Text style={styles.userEmail}>{user.email}</Text>
+            )}
           </GlassPanel>
         </View>
       </ScrollView>
@@ -1730,5 +1770,26 @@ const styles = StyleSheet.create({
     color: Colors.dark.text,
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  logoutCard: {
+    padding: 16,
+    alignItems: 'center' as const,
+    gap: 12,
+  },
+  logoutButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.dark.error,
+    alignItems: 'center' as const,
+  },
+  logoutText: {
+    color: Colors.dark.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  userEmail: {
+    color: Colors.dark.textSecondary,
+    fontSize: 14,
   },
 });

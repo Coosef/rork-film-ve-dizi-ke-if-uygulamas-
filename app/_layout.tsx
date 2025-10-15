@@ -8,6 +8,7 @@ import { PreferencesProvider, usePreferences } from "@/contexts/PreferencesConte
 import { SearchHistoryProvider } from "@/contexts/SearchHistoryContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Colors from "@/constants/colors";
 import { trpc, trpcClient } from "@/lib/trpc";
 
@@ -36,6 +37,7 @@ function RootLayoutNav() {
   const segments = useSegments();
   const preferencesContext = usePreferences();
   const languageContext = useLanguage();
+  const authContext = useAuth();
   const [appReady, setAppReady] = React.useState(false);
   const [hasNavigated, setHasNavigated] = React.useState(false);
 
@@ -61,25 +63,30 @@ function RootLayoutNav() {
   }, [preferencesContext]);
 
   useEffect(() => {
-    if (!appReady || !preferencesContext || hasNavigated) {
+    if (!appReady || !preferencesContext || !authContext || hasNavigated) {
       return;
     }
 
     const inOnboarding = segments[0] === 'onboarding';
+    const inAuth = segments.length > 0 && segments[0]?.includes('auth');
     const hasCompletedOnboarding = preferencesContext.preferences?.hasCompletedOnboarding;
+    const isAuthenticated = authContext.isAuthenticated;
 
-    console.log('[RootLayout] Onboarding check:', { hasCompletedOnboarding, inOnboarding, segments });
+    console.log('[RootLayout] Navigation check:', { hasCompletedOnboarding, isAuthenticated, inOnboarding, inAuth, segments });
 
-    if (!hasCompletedOnboarding && !inOnboarding) {
+    if (!isAuthenticated && !inAuth) {
+      setHasNavigated(true);
+      router.replace('/(tabs)/(home)' as any);
+    } else if (isAuthenticated && !hasCompletedOnboarding && !inOnboarding) {
       setHasNavigated(true);
       router.replace('/onboarding');
-    } else if (hasCompletedOnboarding && inOnboarding) {
+    } else if (isAuthenticated && hasCompletedOnboarding && (inOnboarding || inAuth)) {
       setHasNavigated(true);
       router.replace('/(tabs)/(home)');
     }
-  }, [preferencesContext, appReady, segments, router, hasNavigated]);
+  }, [preferencesContext, authContext, appReady, segments, router, hasNavigated]);
 
-  if (!appReady || !preferencesContext || !languageContext) {
+  if (!appReady || !preferencesContext || !languageContext || !authContext) {
     return null;
   }
 
@@ -98,6 +105,7 @@ function RootLayoutNav() {
         },
       }}
     >
+      <Stack.Screen name="auth" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="smart-lists" options={{ headerShown: true, title: t('smartLists.title') }} />
@@ -118,19 +126,21 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <PreferencesProvider>
-          <LanguageProvider>
-            <LibraryProvider>
-              <SearchHistoryProvider>
-                <NotificationProvider>
-                  <GestureHandlerRootView style={{ flex: 1 }}>
-                    <RootLayoutNav />
-                  </GestureHandlerRootView>
-                </NotificationProvider>
-              </SearchHistoryProvider>
-            </LibraryProvider>
-          </LanguageProvider>
-        </PreferencesProvider>
+        <AuthProvider>
+          <PreferencesProvider>
+            <LanguageProvider>
+              <LibraryProvider>
+                <SearchHistoryProvider>
+                  <NotificationProvider>
+                    <GestureHandlerRootView style={{ flex: 1 }}>
+                      <RootLayoutNav />
+                    </GestureHandlerRootView>
+                  </NotificationProvider>
+                </SearchHistoryProvider>
+              </LibraryProvider>
+            </LanguageProvider>
+          </PreferencesProvider>
+        </AuthProvider>
       </trpc.Provider>
     </QueryClientProvider>
   );
