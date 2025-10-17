@@ -5,7 +5,13 @@ import Colors from "@/constants/colors";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function TabLayout() {
-  const { t } = useLanguage();
+  const languageContext = useLanguage();
+
+  if (!languageContext) {
+    return null;
+  }
+
+  const { t } = languageContext;
 
   return (
     <Tabs
