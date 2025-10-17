@@ -384,5 +384,6 @@ export default {
     enterEmail: 'Lütfen e-posta adresinizi girin',
     resetPasswordError: 'Şifre sıfırlama hatası',
     resetPasswordSuccess: 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi',
+    rateLimitError: 'Çok fazla deneme yaptınız. Lütfen 1 dakika bekleyin ve tekrar deneyin.',
   },
 };

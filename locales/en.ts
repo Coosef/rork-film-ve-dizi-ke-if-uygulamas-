@@ -383,5 +383,6 @@ export default {
     enterEmail: 'Please enter your email',
     resetPasswordError: 'Password reset error',
     resetPasswordSuccess: 'Password reset link sent to your email',
+    rateLimitError: 'Too many attempts. Please wait 1 minute and try again.',
   },
 };

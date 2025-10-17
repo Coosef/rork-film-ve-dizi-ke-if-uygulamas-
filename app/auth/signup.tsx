@@ -41,7 +41,12 @@ export default function SignUpScreen() {
       await signUpWithEmail(email, password);
     } catch (err: any) {
       console.error('[SignUp] Error:', err);
-      setError(err.message || t('auth.signUpError'));
+      
+      if (err.message && err.message.includes('For security purposes')) {
+        setError(t('auth.rateLimitError'));
+      } else {
+        setError(err.message || t('auth.signUpError'));
+      }
     } finally {
       setIsLoading(false);
     }
