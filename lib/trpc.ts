@@ -2,6 +2,7 @@ import { createTRPCReact } from "@trpc/react-query";
 import { httpBatchLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
+import { supabase } from '@/lib/supabase';
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -49,6 +50,17 @@ export const trpcClient = trpc.createClient({
     httpBatchLink({
       url: `${getBaseUrl()}/api/trpc`,
       transformer: superjson,
+      async headers() {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.access_token) {
+          return {
+            authorization: `Bearer ${session.access_token}`,
+          };
+        }
+        
+        return {};
+      },
       async fetch(url, options) {
         console.log('[tRPC Client] Request:', url);
         try {

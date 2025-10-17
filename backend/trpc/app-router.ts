@@ -7,6 +7,8 @@ import getStatsRoute from "./routes/library/get-stats/route";
 import getHistoryRoute from "./routes/library/get-history/route";
 import getPreferencesRoute from "./routes/preferences/get/route";
 import updatePreferencesRoute from "./routes/preferences/update/route";
+import getProfileRoute from "./routes/profile/get/route";
+import updateProfileRoute from "./routes/profile/update/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -22,6 +24,10 @@ export const appRouter = createTRPCRouter({
   preferences: createTRPCRouter({
     get: getPreferencesRoute,
     update: updatePreferencesRoute,
+  }),
+  profile: createTRPCRouter({
+    get: getProfileRoute,
+    update: updateProfileRoute,
   }),
 });
 

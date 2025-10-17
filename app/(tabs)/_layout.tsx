@@ -6,12 +6,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function TabLayout() {
   const languageContext = useLanguage();
+  const t = languageContext?.t;
 
-  if (!languageContext) {
+  if (!languageContext || !t) {
     return null;
   }
-
-  const { t } = languageContext;
 
   return (
     <Tabs

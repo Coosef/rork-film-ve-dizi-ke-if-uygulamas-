@@ -63,24 +63,27 @@ function RootLayoutNav() {
   }, [preferencesContext]);
 
   useEffect(() => {
-    if (!appReady || !preferencesContext || !authContext || hasNavigated) {
+    if (!appReady || !preferencesContext || !authContext || hasNavigated || authContext.isLoading) {
       return;
     }
 
     const inOnboarding = segments[0] === 'onboarding';
-    const inAuth = segments.length > 0 && segments[0]?.includes('auth');
+    const inAuth = segments[0] === 'auth';
     const hasCompletedOnboarding = preferencesContext.preferences?.hasCompletedOnboarding;
     const isAuthenticated = authContext.isAuthenticated;
 
     console.log('[RootLayout] Navigation check:', { hasCompletedOnboarding, isAuthenticated, inOnboarding, inAuth, segments });
 
     if (!isAuthenticated && !inAuth) {
+      console.log('[RootLayout] Redirecting to auth/login');
       setHasNavigated(true);
-      router.replace('/(tabs)/(home)' as any);
+      router.replace('/auth/login');
     } else if (isAuthenticated && !hasCompletedOnboarding && !inOnboarding) {
+      console.log('[RootLayout] Redirecting to onboarding');
       setHasNavigated(true);
       router.replace('/onboarding');
     } else if (isAuthenticated && hasCompletedOnboarding && (inOnboarding || inAuth)) {
+      console.log('[RootLayout] Redirecting to home');
       setHasNavigated(true);
       router.replace('/(tabs)/(home)');
     }
