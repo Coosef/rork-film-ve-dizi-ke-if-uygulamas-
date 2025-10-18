@@ -164,15 +164,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>{t('auth.dontHaveAccount')} </Text>
-              <TouchableOpacity
-                onPress={() => router.push('/auth/signup')}
-                disabled={isLoading}
-              >
-                <Text style={styles.footerLink}>{t('auth.signUp')}</Text>
-              </TouchableOpacity>
-            </View>
+
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
