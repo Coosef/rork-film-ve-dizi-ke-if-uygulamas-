@@ -1,21 +1,40 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, Language } from '@/contexts/LanguageContext';
 import Colors from '@/constants/colors';
-import { Film, Mail, Lock, Chrome, Apple } from 'lucide-react-native';
+import { Film, Mail, Lock, Chrome, Apple, Languages } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const LANGUAGE_NAMES: Record<Language, string> = {
+  tr: 'Türkçe',
+  en: 'English',
+  de: 'Deutsch',
+  fr: 'Français',
+  es: 'Español',
+  it: 'Italiano',
+};
+
+const LANGUAGE_FLAGS: Record<Language, string> = {
+  tr: '🇹🇷',
+  en: '🇬🇧',
+  de: '🇩🇪',
+  fr: '🇫🇷',
+  es: '🇪🇸',
+  it: '🇮🇹',
+};
 
 export default function LoginScreen() {
   const router = useRouter();
   const { signInWithEmail, signInWithGoogle, signInWithApple } = useAuth();
-  const { t } = useLanguage();
+  const { t, language, changeLanguage, availableLanguages } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   const handleEmailLogin = async () => {
     if (!email || !password) {
@@ -70,6 +89,14 @@ export default function LoginScreen() {
         colors={[Colors.dark.background, Colors.dark.backgroundSecondary]}
         style={StyleSheet.absoluteFill}
       />
+      
+      <TouchableOpacity
+        style={styles.languageButton}
+        onPress={() => setShowLanguageModal(true)}
+        disabled={isLoading}
+      >
+        <Languages size={24} color={Colors.dark.primary} />
+      </TouchableOpacity>
       
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -176,6 +203,46 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={showLanguageModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowLanguageModal(false)}
+      >
+        <View style={styles.languageModalOverlay}>
+          <Pressable 
+            style={styles.languageModalBackdrop} 
+            onPress={() => setShowLanguageModal(false)} 
+          />
+          <View style={styles.languageModalContent}>
+            <View style={styles.languageModalHeader}>
+              <Text style={styles.languageModalTitle}>{t('profile.language')}</Text>
+              <TouchableOpacity onPress={() => setShowLanguageModal(false)}>
+                <Text style={styles.languageModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.languageList}>
+              {availableLanguages.map((lang) => (
+                <TouchableOpacity
+                  key={lang}
+                  style={[
+                    styles.languageItem,
+                    language === lang && styles.languageItemActive,
+                  ]}
+                  onPress={async () => {
+                    await changeLanguage(lang);
+                    setShowLanguageModal(false);
+                  }}
+                >
+                  <Text style={styles.languageFlag}>{LANGUAGE_FLAGS[lang]}</Text>
+                  <Text style={styles.languageName}>{LANGUAGE_NAMES[lang]}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -314,5 +381,86 @@ const styles = StyleSheet.create({
     color: Colors.dark.primary,
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  languageButton: {
+    position: 'absolute' as const,
+    top: 16,
+    right: 24,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.dark.backgroundSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    zIndex: 10,
+  },
+  languageModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  languageModalBackdrop: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  languageModalContent: {
+    backgroundColor: Colors.dark.backgroundSecondary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  languageModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.dark.border,
+  },
+  languageModalTitle: {
+    fontSize: 20,
+    fontWeight: '700' as const,
+    color: Colors.dark.text,
+  },
+  languageModalClose: {
+    fontSize: 28,
+    color: Colors.dark.textSecondary,
+    fontWeight: '300' as const,
+  },
+  languageList: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+  languageItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginVertical: 4,
+    backgroundColor: Colors.dark.background,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  languageItemActive: {
+    borderColor: Colors.dark.primary,
+    backgroundColor: `${Colors.dark.primary}15`,
+  },
+  languageFlag: {
+    fontSize: 28,
+    marginRight: 12,
+  },
+  languageName: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: Colors.dark.text,
   },
 });

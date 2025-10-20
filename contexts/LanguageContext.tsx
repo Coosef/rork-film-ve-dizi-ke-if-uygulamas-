@@ -3,6 +3,8 @@ import { useCallback, useState, useEffect, useMemo } from 'react';
 import { Language, translations, TranslationKeys } from '@/locales';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export type { Language };
+
 const LANGUAGE_KEY = '@ui_language';
 
 type TranslationPath<T> = T extends object
