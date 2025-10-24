@@ -389,5 +389,7 @@ export default {
     resetPasswordError: 'Şifre sıfırlama hatası',
     resetPasswordSuccess: 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi',
     rateLimitError: 'Çok fazla deneme yaptınız. Lütfen 1 dakika bekleyin ve tekrar deneyin.',
+    invalidCredentialsHelp: 'Geçersiz e-posta veya şifre. Yeni kayıt olduysanız, önce e-postanızı kontrol edip hesabınızı doğrulayın.',
+    emailNotConfirmed: 'Lütfen e-postanızı kontrol edin ve giriş yapmadan önce doğrulama bağlantısına tıklayın.',
   },
 };

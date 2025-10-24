@@ -49,7 +49,15 @@ export default function LoginScreen() {
       await signInWithEmail(email, password);
     } catch (err: any) {
       console.error('[Login] Error:', err);
-      setError(err.message || t('auth.loginError'));
+      let errorMessage = err.message || t('auth.loginError');
+      
+      if (err.message?.includes('Invalid login credentials')) {
+        errorMessage = t('auth.invalidCredentialsHelp');
+      } else if (err.message?.includes('Email not confirmed')) {
+        errorMessage = t('auth.emailNotConfirmed');
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

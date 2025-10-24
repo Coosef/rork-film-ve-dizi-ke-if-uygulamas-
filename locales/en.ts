@@ -389,5 +389,7 @@ export default {
     resetPasswordError: 'Password reset error',
     resetPasswordSuccess: 'Password reset link sent to your email',
     rateLimitError: 'Too many attempts. Please wait 1 minute and try again.',
+    invalidCredentialsHelp: 'Invalid email or password. If you just signed up, please check your email to confirm your account first.',
+    emailNotConfirmed: 'Please check your email and click the confirmation link before logging in.',
   },
 };
