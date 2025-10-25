@@ -55,6 +55,8 @@ export default function LoginScreen() {
         errorMessage = t('auth.invalidCredentialsHelp');
       } else if (err.message?.includes('Email not confirmed')) {
         errorMessage = t('auth.emailNotConfirmed');
+      } else if (err.message?.includes('For security purposes')) {
+        errorMessage = t('auth.rateLimitError');
       }
       
       setError(errorMessage);
