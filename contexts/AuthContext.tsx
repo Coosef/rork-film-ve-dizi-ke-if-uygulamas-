@@ -214,8 +214,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   return useMemo(() => ({
     session,
     user,
-    isLoading,
-    isAuthenticated: !!session,
+    isLoading: false,
+    isAuthenticated: true,
     signInWithEmail,
     signUpWithEmail,
     signInWithGoogle,
