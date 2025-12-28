@@ -351,6 +351,20 @@ export default {
     error: 'Dışa aktarma sırasında bir hata oluştu',
   },
 
+  backup: {
+    warningTitle: '⚠️ Önemli: Verilerinizi Yedekleyin',
+    warningMessage: 'Verileriniz yalnızca bu cihazda saklanmaktadır. Uygulama silindiğinde veya cihaz değiştirildiğinde tüm verileriniz kaybolacaktır.\n\nDüzenli olarak verilerinizi yedeklemenizi şiddetle tavsiye ederiz.',
+    warningCta: 'Verilerimi Yedekle',
+    warningLater: 'Daha Sonra Hatırlat',
+    warningUnderstood: 'Anladım',
+    exportWarning: '⚠️ Verileriniz yalnızca bu cihazda saklanır. Cihaz değişiminde veya uygulama silindiğinde verileriniz kaybolur. Düzenli yedekleme yapmanız önemle tavsiye edilir.',
+    localStorageInfo: 'Tüm verileriniz cihazınızda yerel olarak saklanır. Hiçbir veri sunucularımıza yüklenmez.',
+    backupReminder: 'Son yedekleme: {date}',
+    noBackup: 'Henüz yedekleme yapmadınız',
+    regularBackup: 'Düzenli yedekleme yapın',
+    dataLossRisk: 'Veri kaybı riski',
+  },
+
   languages: {
     tr: 'Türkçe',
     en: 'English',

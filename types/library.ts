@@ -53,6 +53,8 @@ export interface UserPreferences {
   hapticsEnabled: boolean;
   favoriteGenres: number[];
   hasCompletedOnboarding?: boolean;
+  hasSeenBackupWarning?: boolean;
+  lastBackupDate?: string;
   publicProfile?: boolean;
   showWatchlist?: boolean;
   showRatings?: boolean;

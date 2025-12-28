@@ -351,6 +351,20 @@ export default {
     error: 'An error occurred during export',
   },
 
+  backup: {
+    warningTitle: '⚠️ Important: Backup Your Data',
+    warningMessage: 'Your data is stored only on this device. If the app is deleted or the device is changed, all your data will be lost.\n\nWe strongly recommend backing up your data regularly.',
+    warningCta: 'Backup My Data',
+    warningLater: 'Remind Me Later',
+    warningUnderstood: 'I Understand',
+    exportWarning: '⚠️ Your data is stored only on this device. Device change or app deletion will result in data loss. Regular backups are strongly recommended.',
+    localStorageInfo: 'All your data is stored locally on your device. No data is uploaded to our servers.',
+    backupReminder: 'Last backup: {date}',
+    noBackup: 'You haven\'t backed up yet',
+    regularBackup: 'Backup regularly',
+    dataLossRisk: 'Risk of data loss',
+  },
+
   languages: {
     tr: 'Türkçe',
     en: 'English',

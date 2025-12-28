@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { Download, FileJson, FileSpreadsheet, Share2, Upload } from 'lucide-react-native';
+import { Download, FileJson, FileSpreadsheet, Share2, Upload, AlertCircle } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -14,21 +14,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Colors from '@/constants/colors';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { exportLibraryAsJSON, exportLibraryAsCSV } from '@/services/export';
 
 export default function ExportDataScreen() {
   const insets = useSafeAreaInsets();
   const { interactions } = useLibrary();
-  const { preferences } = usePreferences();
+  const { preferences, updatePreferences } = usePreferences();
+  const { t } = useLanguage();
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExportJSON = async () => {
     try {
       setIsExporting(true);
       await exportLibraryAsJSON(interactions, preferences);
-      Alert.alert('Başarılı', 'Verileriniz JSON formatında dışa aktarıldı');
+      await updatePreferences({ lastBackupDate: new Date().toISOString() });
+      Alert.alert(t('common.success'), t('export.success'));
     } catch (error) {
-      Alert.alert('Hata', 'Dışa aktarma sırasında bir hata oluştu');
+      Alert.alert(t('common.error'), t('export.error'));
       console.error('[Export] Error:', error);
     } finally {
       setIsExporting(false);
@@ -39,9 +42,9 @@ export default function ExportDataScreen() {
     try {
       setIsExporting(true);
       await exportLibraryAsCSV(interactions);
-      Alert.alert('Başarılı', 'Verileriniz CSV formatında dışa aktarıldı');
+      Alert.alert(t('common.success'), t('export.success'));
     } catch (error) {
-      Alert.alert('Hata', 'Dışa aktarma sırasında bir hata oluştu');
+      Alert.alert(t('common.error'), t('export.error'));
       console.error('[Export] Error:', error);
     } finally {
       setIsExporting(false);
@@ -50,12 +53,12 @@ export default function ExportDataScreen() {
 
   const handleImportData = async () => {
     Alert.alert(
-      'Veri İçe Aktar',
+      t('export.title'),
       'JSON dosyası seçerek verilerinizi geri yükleyebilirsiniz. Mevcut verileriniz silinecektir.',
       [
-        { text: 'İptal', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Devam Et',
+          text: t('common.next'),
           onPress: () => {
             console.log('[Import] Import data feature - Coming soon');
             Alert.alert('Yakında', 'Bu özellik yakında eklenecek');
@@ -63,6 +66,14 @@ export default function ExportDataScreen() {
         },
       ]
     );
+  };
+
+  const getLastBackupText = () => {
+    if (!preferences.lastBackupDate) {
+      return t('backup.noBackup');
+    }
+    const date = new Date(preferences.lastBackupDate);
+    return t('backup.backupReminder').replace('{date}', date.toLocaleDateString());
   };
 
   const stats = {
@@ -73,17 +84,35 @@ export default function ExportDataScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Veri Dışa Aktar', headerShown: true }} />
+      <Stack.Screen options={{ title: t('export.title'), headerShown: true }} />
       <View style={styles.container}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={[styles.header, { paddingTop: insets.top }]}>
             <View style={styles.iconContainer}>
               <Share2 size={48} color={Colors.dark.primary} />
             </View>
-            <Text style={styles.headerTitle}>Verilerinizi Dışa Aktarın</Text>
+            <Text style={styles.headerTitle}>{t('export.title')}</Text>
             <Text style={styles.headerSubtitle}>
-              Tüm izleme geçmişinizi ve tercihlerinizi yedekleyin
+              {t('export.description')}
             </Text>
+          </View>
+
+          <View style={styles.warningBox}>
+            <View style={styles.warningHeader}>
+              <AlertCircle size={24} color={Colors.dark.accent} />
+              <Text style={styles.warningTitle}>{t('backup.warningTitle').replace('⚠️ ', '')}</Text>
+            </View>
+            <Text style={styles.warningText}>
+              {t('backup.exportWarning')}
+            </Text>
+            <Text style={styles.warningInfo}>
+              {t('backup.localStorageInfo')}
+            </Text>
+            <View style={styles.backupStatusContainer}>
+              <Text style={styles.backupStatus}>
+                {getLastBackupText()}
+              </Text>
+            </View>
           </View>
 
           <View style={styles.statsContainer}>
@@ -102,9 +131,9 @@ export default function ExportDataScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Veri Yönetimi</Text>
+            <Text style={styles.sectionTitle}>{t('export.title')}</Text>
             <Text style={styles.sectionDescription}>
-              Verilerinizi dışa aktarın veya içe aktarın
+              {t('backup.regularBackup')}
             </Text>
 
             <Pressable
@@ -162,7 +191,7 @@ export default function ExportDataScreen() {
           </View>
 
           <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>ℹ️ Bilgi</Text>
+            <Text style={styles.infoTitle}>ℹ️ {t('common.ok')}</Text>
             <Text style={styles.infoText}>
               • Dışa aktarılan dosyalar cihazınızda saklanır{'\n'}
               • JSON dosyası ile verilerinizi geri yükleyebilirsiniz{'\n'}
@@ -334,5 +363,49 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.dark.text,
     marginBottom: 16,
+  },
+  warningBox: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    backgroundColor: `${Colors.dark.accent}15`,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: Colors.dark.accent,
+  },
+  warningHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  warningTitle: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: Colors.dark.text,
+    flex: 1,
+  },
+  warningText: {
+    fontSize: 14,
+    color: Colors.dark.text,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  warningInfo: {
+    fontSize: 13,
+    color: Colors.dark.textSecondary,
+    lineHeight: 20,
+    fontStyle: 'italic' as const,
+  },
+  backupStatusContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: `${Colors.dark.accent}30`,
+  },
+  backupStatus: {
+    fontSize: 13,
+    color: Colors.dark.textSecondary,
+    fontWeight: '600' as const,
   },
 });
