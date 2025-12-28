@@ -1,4 +1,4 @@
-import { generateObject, generateText } from "@rork/toolkit-sdk";
+import { generateObject, generateText } from "@rork-ai/toolkit-sdk";
 import { z } from "zod";
 import { TVMazeShow } from "@/types/tvmaze";
 import { Interaction } from "@/types/library";

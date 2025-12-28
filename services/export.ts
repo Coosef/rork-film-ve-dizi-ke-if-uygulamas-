@@ -1,5 +1,3 @@
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 import { Interaction, UserPreferences } from '@/types/library';
 
@@ -86,18 +84,16 @@ export const shareExportFile = async (
     return;
   }
 
-  const fileUri = `${FileSystem.documentDirectory}${filename}`;
-  await FileSystem.writeAsStringAsync(fileUri, content, {
-    encoding: FileSystem.EncodingType.UTF8,
-  });
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 
-  const canShare = await Sharing.isAvailableAsync();
-  if (canShare) {
-    await Sharing.shareAsync(fileUri, {
-      mimeType,
-      dialogTitle: 'Verileri Dışa Aktar',
-    });
-  }
 };
 
 export const exportLibraryAsJSON = async (

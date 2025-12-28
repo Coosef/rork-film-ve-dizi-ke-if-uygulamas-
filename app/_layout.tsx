@@ -114,6 +114,10 @@ function RootLayoutNav() {
       <Stack.Screen name="smart-lists" options={{ headerShown: true, title: t('smartLists.title') }} />
       <Stack.Screen name="search" options={{ headerShown: false }} />
       <Stack.Screen name="export-data" options={{ headerShown: true, title: t('export.title') }} />
+      <Stack.Screen name="stats" options={{ headerShown: true, title: t('stats.title') }} />
+      <Stack.Screen name="social" options={{ headerShown: true, title: t('social.title') }} />
+      <Stack.Screen name="watch-party" options={{ headerShown: true, title: t('social.watchParty') }} />
+      <Stack.Screen name="notification-settings" options={{ headerShown: true, title: t('notifications.settings') }} />
       <Stack.Screen 
         name="movie/[id]" 
         options={{ 
