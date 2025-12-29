@@ -1,4 +1,6 @@
 import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { Interaction, UserPreferences } from '@/types/library';
 
 export interface ExportData {
@@ -84,16 +86,20 @@ export const shareExportFile = async (
     return;
   }
 
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+  await FileSystem.writeAsStringAsync(fileUri, content, {
+    encoding: FileSystem.EncodingType.UTF8,
+  });
 
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(fileUri, {
+      mimeType,
+      dialogTitle: filename,
+      UTI: mimeType === 'application/json' ? 'public.json' : 'public.comma-separated-values-text',
+    });
+  } else {
+    throw new Error('Paylaşım bu cihazda desteklenmiyor');
+  }
 };
 
 export const exportLibraryAsJSON = async (
