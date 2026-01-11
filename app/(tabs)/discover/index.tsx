@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { X, Heart, RotateCcw, Info, Filter } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,16 +13,9 @@ import {
   Dimensions,
   ScrollView,
   Modal,
+  Animated,
+  PanResponder,
 } from 'react-native';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  runOnJS,
-  interpolate,
-  Extrapolate,
-} from 'react-native-reanimated';
 import Colors from '@/constants/colors';
 import GenreBadge from '@/components/GenreBadge';
 import { useLibrary } from '@/contexts/LibraryContext';
@@ -53,9 +46,70 @@ export default function DiscoverScreen() {
   const [isAnimating, setIsAnimating] = useState(false);
   const MAX_UNDO_STACK = 10;
   
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const isGestureActive = useSharedValue(false);
+  const position = useRef(new Animated.ValueXY()).current;
+  const nextCardScale = useRef(new Animated.Value(0.95)).current;
+  const nextCardOpacity = useRef(new Animated.Value(0.8)).current;
+
+  const rotate = position.x.interpolate({
+    inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
+    outputRange: [`-${ROTATION_ANGLE}deg`, '0deg', `${ROTATION_ANGLE}deg`],
+    extrapolate: 'clamp',
+  });
+
+  const likeOpacity = position.x.interpolate({
+    inputRange: [0, SWIPE_THRESHOLD],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  });
+
+  const nopeOpacity = position.x.interpolate({
+    inputRange: [-SWIPE_THRESHOLD, 0],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => !isAnimating,
+      onPanResponderMove: (_, gesture) => {
+        if (!isAnimating) {
+          position.setValue({ x: gesture.dx, y: gesture.dy });
+          const progress = Math.min(Math.abs(gesture.dx) / (SCREEN_WIDTH / 4), 1);
+          nextCardScale.setValue(0.95 + 0.05 * progress);
+          nextCardOpacity.setValue(0.8 + 0.2 * progress);
+        }
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (Math.abs(gesture.dx) > SWIPE_THRESHOLD) {
+          const direction = gesture.dx > 0 ? 'right' : 'left';
+          const toValue = direction === 'right' ? SCREEN_WIDTH + 100 : -SCREEN_WIDTH - 100;
+          setIsAnimating(true);
+          Animated.timing(position, {
+            toValue: { x: toValue, y: gesture.dy },
+            duration: 200,
+            useNativeDriver: false,
+          }).start(() => {
+            handleSwipeComplete(direction);
+          });
+        } else {
+          Animated.parallel([
+            Animated.spring(position, {
+              toValue: { x: 0, y: 0 },
+              useNativeDriver: false,
+            }),
+            Animated.spring(nextCardScale, {
+              toValue: 0.95,
+              useNativeDriver: false,
+            }),
+            Animated.spring(nextCardOpacity, {
+              toValue: 0.8,
+              useNativeDriver: false,
+            }),
+          ]).start();
+        }
+      },
+    })
+  ).current;
 
   const discoverQuery = useQuery({
     queryKey: ['discover', page, selectedGenre, minRating, minYear, maxYear],
@@ -103,150 +157,50 @@ export default function DiscoverScreen() {
   const nextMovie = movies[currentIndex + 1];
 
   const handleSwipeComplete = (direction: 'left' | 'right') => {
-    if (!currentMovie || isAnimating) return;
+    const movie = movies[currentIndex];
+    if (!movie) return;
 
     if (direction === 'right') {
-      addInteraction(currentMovie.id, currentMovie.type, 'favorite');
-      console.log('[Discover] Liked:', currentMovie.title);
+      addInteraction(movie.id, movie.type, 'favorite');
+      console.log('[Discover] Liked:', movie.title);
     } else {
-      addInteraction(currentMovie.id, currentMovie.type, 'skipped');
-      console.log('[Discover] Skipped:', currentMovie.title);
+      addInteraction(movie.id, movie.type, 'skipped');
+      console.log('[Discover] Skipped:', movie.title);
     }
 
     setSwipedCards(prev => {
       const newStack = [...prev, { index: currentIndex, direction }];
       return newStack.slice(-MAX_UNDO_STACK);
     });
-    setCurrentIndex(currentIndex + 1);
+    setCurrentIndex(prev => prev + 1);
     
-    setTimeout(() => {
-      translateX.value = 0;
-      translateY.value = 0;
-      setIsAnimating(false);
-    }, 10);
+    position.setValue({ x: 0, y: 0 });
+    nextCardScale.setValue(0.95);
+    nextCardOpacity.setValue(0.8);
+    setIsAnimating(false);
   };
-
-  const panGesture = Gesture.Pan()
-    .enabled(!isAnimating)
-    .onStart(() => {
-      isGestureActive.value = true;
-    })
-    .onUpdate((event) => {
-      if (!isAnimating) {
-        translateX.value = event.translationX;
-        translateY.value = event.translationY;
-      }
-    })
-    .onEnd((event) => {
-      isGestureActive.value = false;
-      
-      if (Math.abs(event.translationX) > SWIPE_THRESHOLD) {
-        runOnJS(setIsAnimating)(true);
-        
-        if (event.translationX > 0) {
-          translateX.value = withSpring(SCREEN_WIDTH + 100, {
-            damping: 15,
-            stiffness: 150,
-            velocity: event.velocityX,
-          }, () => {
-            runOnJS(handleSwipeComplete)('right');
-          });
-        } else {
-          translateX.value = withSpring(-SCREEN_WIDTH - 100, {
-            damping: 15,
-            stiffness: 150,
-            velocity: event.velocityX,
-          }, () => {
-            runOnJS(handleSwipeComplete)('left');
-          });
-        }
-      } else {
-        translateX.value = withSpring(0, {
-          damping: 20,
-          stiffness: 200,
-        });
-        translateY.value = withSpring(0, {
-          damping: 20,
-          stiffness: 200,
-        });
-      }
-    });
-
-  const animatedCardStyle = useAnimatedStyle(() => {
-    const rotate = interpolate(
-      translateX.value,
-      [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
-      [-ROTATION_ANGLE, 0, ROTATION_ANGLE],
-      Extrapolate.CLAMP
-    );
-
-    return {
-      transform: [
-        { translateX: translateX.value },
-        { translateY: translateY.value },
-        { rotate: `${rotate}deg` },
-      ],
-    };
-  });
-
-  const likeStampStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      translateX.value,
-      [0, SWIPE_THRESHOLD],
-      [0, 1],
-      Extrapolate.CLAMP
-    );
-    return { opacity };
-  });
-
-  const nopeStampStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      translateX.value,
-      [-SWIPE_THRESHOLD, 0],
-      [1, 0],
-      Extrapolate.CLAMP
-    );
-    return { opacity };
-  });
-
-  const nextCardStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      translateX.value,
-      [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-      [1, 0.95, 1],
-      Extrapolate.CLAMP
-    );
-    const opacity = interpolate(
-      Math.abs(translateX.value),
-      [0, SCREEN_WIDTH / 4],
-      [0.8, 1],
-      Extrapolate.CLAMP
-    );
-    return {
-      transform: [{ scale: withSpring(scale, { damping: 25, stiffness: 300 }) }],
-      opacity,
-    };
-  });
 
   const handleLike = () => {
     if (isAnimating) return;
     setIsAnimating(true);
-    translateX.value = withSpring(SCREEN_WIDTH + 100, {
-      damping: 15,
-      stiffness: 150,
-    }, () => {
-      runOnJS(handleSwipeComplete)('right');
+    Animated.timing(position, {
+      toValue: { x: SCREEN_WIDTH + 100, y: 0 },
+      duration: 200,
+      useNativeDriver: false,
+    }).start(() => {
+      handleSwipeComplete('right');
     });
   };
 
   const handlePass = () => {
     if (isAnimating) return;
     setIsAnimating(true);
-    translateX.value = withSpring(-SCREEN_WIDTH - 100, {
-      damping: 15,
-      stiffness: 150,
-    }, () => {
-      runOnJS(handleSwipeComplete)('left');
+    Animated.timing(position, {
+      toValue: { x: -SCREEN_WIDTH - 100, y: 0 },
+      duration: 200,
+      useNativeDriver: false,
+    }).start(() => {
+      handleSwipeComplete('left');
     });
   };
 
@@ -265,8 +219,7 @@ export default function DiscoverScreen() {
       
       setCurrentIndex(lastSwipe.index);
       setSwipedCards(swipedCards.slice(0, -1));
-      translateX.value = 0;
-      translateY.value = 0;
+      position.setValue({ x: 0, y: 0 });
     }
   };
 
@@ -383,7 +336,7 @@ export default function DiscoverScreen() {
 
       <View style={styles.cardContainer}>
         {nextMovie && (
-          <Animated.View style={[styles.card, nextCardStyle]}>
+          <Animated.View style={[styles.card, { transform: [{ scale: nextCardScale }], opacity: nextCardOpacity }]}>
             <Image
               source={{ uri: nextMovie.posterPath || 'https://via.placeholder.com/500x750?text=No+Image' }}
               style={styles.cardImage}
@@ -417,13 +370,24 @@ export default function DiscoverScreen() {
           </Animated.View>
         )}
         
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.card, animatedCardStyle]}>
-            <Pressable 
-              style={styles.cardPressable}
-              onPress={handleCardPress}
-              disabled={isAnimating}
-            >
+        <Animated.View 
+          style={[
+            styles.card, 
+            { 
+              transform: [
+                { translateX: position.x },
+                { translateY: position.y },
+                { rotate: rotate },
+              ] 
+            }
+          ]}
+          {...panResponder.panHandlers}
+        >
+          <Pressable 
+            style={styles.cardPressable}
+            onPress={handleCardPress}
+            disabled={isAnimating}
+          >
             <Image
               source={{ uri: currentMovie.posterPath || 'https://via.placeholder.com/500x750?text=No+Image' }}
               style={styles.cardImage}
@@ -434,11 +398,11 @@ export default function DiscoverScreen() {
               style={styles.cardGradient}
             />
             
-            <Animated.View style={[styles.likeStamp, likeStampStyle]}>
+            <Animated.View style={[styles.likeStamp, { opacity: likeOpacity }]}>
               <Text style={styles.stampText}>{t('discover.like')}</Text>
             </Animated.View>
             
-            <Animated.View style={[styles.nopeStamp, nopeStampStyle]}>
+            <Animated.View style={[styles.nopeStamp, { opacity: nopeOpacity }]}>
               <Text style={styles.stampText}>{t('discover.pass')}</Text>
             </Animated.View>
 
@@ -463,9 +427,8 @@ export default function DiscoverScreen() {
                 {currentMovie.overview}
               </Text>
             </View>
-            </Pressable>
-          </Animated.View>
-        </GestureDetector>
+          </Pressable>
+        </Animated.View>
       </View>
 
       <View style={styles.actions}>
