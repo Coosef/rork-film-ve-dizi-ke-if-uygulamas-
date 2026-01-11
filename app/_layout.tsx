@@ -3,8 +3,9 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { Modal, StyleSheet, Text, View, Pressable } from "react-native";
-import { AlertCircle } from "lucide-react-native";
+import { Modal, StyleSheet, Text, View, Pressable, Animated } from "react-native";
+import { AlertCircle, WifiOff } from "lucide-react-native";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { LibraryProvider } from "@/contexts/LibraryContext";
 import { PreferencesProvider, usePreferences } from "@/contexts/PreferencesContext";
 import { SearchHistoryProvider } from "@/contexts/SearchHistoryContext";
@@ -43,6 +44,8 @@ function RootLayoutNav() {
   const [appReady, setAppReady] = React.useState(false);
   const [hasNavigated, setHasNavigated] = React.useState(false);
   const [showBackupWarning, setShowBackupWarning] = useState(false);
+  const { isOffline } = useNetworkStatus();
+  const [offlineOpacity] = useState(new Animated.Value(0));
 
   useEffect(() => {
     if (!preferencesContext) {
@@ -109,6 +112,14 @@ function RootLayoutNav() {
     }
   }, [appReady, preferencesContext, authContext]);
 
+  useEffect(() => {
+    Animated.timing(offlineOpacity, {
+      toValue: isOffline ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [isOffline, offlineOpacity]);
+
   if (!appReady || !preferencesContext || !languageContext || !authContext) {
     return null;
   }
@@ -128,6 +139,12 @@ function RootLayoutNav() {
 
   return (
     <>
+    {isOffline && (
+      <Animated.View style={[offlineStyles.container, { opacity: offlineOpacity }]}>
+        <WifiOff size={16} color={Colors.dark.text} />
+        <Text style={offlineStyles.text}>Çevrimdışı</Text>
+      </Animated.View>
+    )}
     <Stack 
       screenOptions={{ 
         headerBackTitle: t('common.back'),
@@ -226,6 +243,28 @@ export default function RootLayout() {
     </QueryClientProvider>
   );
 }
+
+const offlineStyles = StyleSheet.create({
+  container: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.dark.warning,
+    flexDirection: 'row',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingVertical: 8,
+    paddingTop: 50,
+    gap: 8,
+    zIndex: 1000,
+  },
+  text: {
+    color: Colors.dark.text,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+});
 
 const modalStyles = StyleSheet.create({
   overlay: {

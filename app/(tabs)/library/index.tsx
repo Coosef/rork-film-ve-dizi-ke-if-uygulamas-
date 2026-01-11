@@ -160,8 +160,21 @@ export default function LibraryScreen() {
     { key: 'smart', label: t('library.smartLists'), count: smartLists.newSeasons.length + smartLists.abandoned.length + smartLists.quickFinish.length },
   ];
 
+  const getEmptyStateEmoji = () => {
+    switch (activeTab) {
+      case 'watchlist': return '📝';
+      case 'watching': return '▶️';
+      case 'watched': return '✅';
+      case 'favorite': return '❤️';
+      default: return '🎬';
+    }
+  };
+
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
+      <View style={styles.emptyIconContainer}>
+        <Text style={styles.emptyEmoji}>{getEmptyStateEmoji()}</Text>
+      </View>
       <Text style={styles.emptyTitle}>{t('library.empty')}</Text>
       <Text style={styles.emptyText}>
         {activeTab === 'watchlist' && t('library.emptyWatchlist')}
@@ -169,6 +182,12 @@ export default function LibraryScreen() {
         {activeTab === 'watched' && t('library.emptyWatched')}
         {activeTab === 'favorite' && t('library.emptyFavorites')}
       </Text>
+      <Pressable 
+        style={styles.emptyButton}
+        onPress={() => router.push('/(tabs)/discover')}
+      >
+        <Text style={styles.emptyButtonText}>{t('discover.title')}</Text>
+      </Pressable>
     </View>
   );
 
@@ -561,6 +580,20 @@ const styles = StyleSheet.create({
     alignItems: 'center' as const,
     padding: 32,
   },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.dark.surfaceLight,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: Colors.dark.border,
+  },
+  emptyEmoji: {
+    fontSize: 48,
+  },
   emptyTitle: {
     color: Colors.dark.text,
     fontSize: 20,
@@ -572,6 +605,18 @@ const styles = StyleSheet.create({
     color: Colors.dark.textSecondary,
     fontSize: 14,
     textAlign: 'center' as const,
+    marginBottom: 24,
+  },
+  emptyButton: {
+    backgroundColor: Colors.dark.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  emptyButtonText: {
+    color: Colors.dark.text,
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
   gridContent: {
     padding: 16,

@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { Interaction, InteractionType, LibraryStats, WatchProgress, Review } from '@/types/library';
 import { MediaType } from '@/types/tvmaze';
+import { hapticFeedback } from '@/utils/haptics';
 
 const LIBRARY_KEY = '@library_interactions';
 
@@ -74,10 +75,19 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
       saveLibrary(newInteractions);
       return newInteractions;
     });
+    
+    if (type === 'favorite') {
+      hapticFeedback.success();
+    } else if (type === 'watched') {
+      hapticFeedback.medium();
+    } else {
+      hapticFeedback.light();
+    }
   }, []);
 
   const removeInteraction = useCallback((mediaId: number, mediaType: MediaType) => {
     console.log('[Library] Removing interaction for', mediaId);
+    hapticFeedback.light();
     setInteractions(prev => {
       const newInteractions = prev.filter(i => !(i.mediaId === mediaId && i.mediaType === mediaType));
       saveLibrary(newInteractions);

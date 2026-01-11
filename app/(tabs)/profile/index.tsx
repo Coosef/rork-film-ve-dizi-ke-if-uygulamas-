@@ -1,4 +1,4 @@
-import { Film, Heart, Clock, TrendingUp, Settings, User, Bell, Shield, Moon, Globe, Volume2, Vibrate, ChevronRight, BarChart3, Award, Target, Flame, Zap, Star, Tv, Camera, Edit3, Share2, Users, MessageCircle, Trophy, Gift } from 'lucide-react-native';
+import { Film, Heart, Clock, TrendingUp, Settings, User, Bell, Shield, Moon, Globe, Volume2, Vibrate, ChevronRight, BarChart3, Award, Target, Flame, Zap, Star, Tv, Camera, Edit3, Share2, Users, MessageCircle, Trophy, Gift, CloudUpload, AlertTriangle } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
@@ -441,6 +441,26 @@ export default function ProfileScreen() {
               </View>
             </View>
           </GlassPanel>
+        </View>
+
+        <View style={styles.section}>
+          <Pressable 
+            style={styles.backupReminderCard}
+            onPress={() => router.push('/export-data')}
+          >
+            <View style={styles.backupReminderIcon}>
+              <AlertTriangle size={24} color={Colors.dark.warning} />
+            </View>
+            <View style={styles.backupReminderContent}>
+              <Text style={styles.backupReminderTitle}>{t('backup.regularBackup')}</Text>
+              <Text style={styles.backupReminderText}>
+                {preferences.lastBackupDate 
+                  ? t('backup.backupReminder').replace('{date}', new Date(preferences.lastBackupDate).toLocaleDateString('tr-TR'))
+                  : t('backup.noBackup')}
+              </Text>
+            </View>
+            <CloudUpload size={20} color={Colors.dark.primary} />
+          </Pressable>
         </View>
 
         <View style={styles.section}>
@@ -1791,5 +1811,36 @@ const styles = StyleSheet.create({
   userEmail: {
     color: Colors.dark.textSecondary,
     fontSize: 14,
+  },
+  backupReminderCard: {
+    flexDirection: 'row',
+    alignItems: 'center' as const,
+    backgroundColor: `${Colors.dark.warning}15`,
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: `${Colors.dark.warning}40`,
+  },
+  backupReminderIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: `${Colors.dark.warning}20`,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+  },
+  backupReminderContent: {
+    flex: 1,
+  },
+  backupReminderTitle: {
+    color: Colors.dark.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
+    marginBottom: 4,
+  },
+  backupReminderText: {
+    color: Colors.dark.textSecondary,
+    fontSize: 13,
   },
 });
