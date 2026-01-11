@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments, Href } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -83,15 +83,15 @@ function RootLayoutNav() {
     if (!isAuthenticated && !inAuth) {
       console.log('[RootLayout] Redirecting to auth/login');
       setHasNavigated(true);
-      router.replace('/auth/login');
+      router.replace('/auth/login' as Href);
     } else if (isAuthenticated && !hasCompletedOnboarding && !inOnboarding) {
       console.log('[RootLayout] Redirecting to onboarding');
       setHasNavigated(true);
-      router.replace('/onboarding');
+      router.replace('/onboarding' as Href);
     } else if (isAuthenticated && hasCompletedOnboarding && (inOnboarding || inAuth)) {
       console.log('[RootLayout] Redirecting to home');
       setHasNavigated(true);
-      router.replace('/(tabs)/(home)');
+      router.replace('/(tabs)/(home)' as Href);
     }
   }, [preferencesContext, authContext, appReady, segments, router, hasNavigated]);
 
@@ -129,7 +129,7 @@ function RootLayoutNav() {
   const handleBackupNow = () => {
     setShowBackupWarning(false);
     preferencesContext.updatePreferences({ hasSeenBackupWarning: true });
-    router.push('/export-data');
+    router.push('/export-data' as Href);
   };
 
   const handleBackupLater = () => {

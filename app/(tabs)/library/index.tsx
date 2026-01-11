@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 import React, { useState, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -184,7 +184,7 @@ export default function LibraryScreen() {
       </Text>
       <Pressable 
         style={styles.emptyButton}
-        onPress={() => router.push('/(tabs)/discover')}
+        onPress={() => router.push('/(tabs)/discover' as Href)}
       >
         <Text style={styles.emptyButtonText}>{t('discover.title')}</Text>
       </Pressable>
@@ -305,7 +305,7 @@ export default function LibraryScreen() {
         <View style={styles.smartListsContainer}>
           <Pressable
             style={styles.smartListsButton}
-            onPress={() => router.push('/smart-lists')}
+            onPress={() => router.push('/smart-lists' as Href)}
           >
             <Text style={styles.smartListsButtonText}>{t('library.viewSmartLists')}</Text>
           </Pressable>

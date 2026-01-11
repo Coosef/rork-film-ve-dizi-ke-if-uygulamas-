@@ -1,6 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -107,7 +107,7 @@ export default function ForgotPasswordScreen() {
                 <Text style={styles.successText}>{t('auth.resetPasswordSuccess')}</Text>
                 <TouchableOpacity
                   style={styles.primaryButton}
-                  onPress={() => router.push('/auth/login')}
+                  onPress={() => router.push('/auth/login' as Href)}
                 >
                   <Text style={styles.primaryButtonText}>{t('auth.backToLogin')}</Text>
                 </TouchableOpacity>

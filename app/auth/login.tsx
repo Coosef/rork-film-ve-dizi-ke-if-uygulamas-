@@ -1,6 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
@@ -159,7 +159,7 @@ export default function LoginScreen() {
 
             <TouchableOpacity
               style={styles.forgotPassword}
-              onPress={() => router.push('/auth/forgot-password')}
+              onPress={() => router.push('/auth/forgot-password' as Href)}
               disabled={isLoading}
             >
               <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
@@ -204,7 +204,7 @@ export default function LoginScreen() {
             <View style={styles.footer}>
               <Text style={styles.footerText}>{t('auth.dontHaveAccount')} </Text>
               <TouchableOpacity
-                onPress={() => router.push('/auth/signup')}
+                onPress={() => router.push('/auth/signup' as Href)}
                 disabled={isLoading}
               >
                 <Text style={styles.footerLink}>{t('auth.signUp')}</Text>

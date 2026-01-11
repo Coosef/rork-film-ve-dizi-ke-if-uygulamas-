@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 import { Sparkles, Check } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
@@ -58,7 +58,7 @@ export default function OnboardingScreen() {
         if (isReturningUser) {
           router.back();
         } else {
-          router.replace('/(tabs)/(home)');
+          router.replace('/(tabs)/(home)' as Href);
         }
       }, 300);
     } catch (error) {

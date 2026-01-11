@@ -15,7 +15,18 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.film-ve-dizi-kesif-uygulamasi"
+      "bundleIdentifier": "app.rork.film-ve-dizi-kesif-uygulamasi",
+      "entitlements": {
+        "com": {
+          "apple": {
+            "developer": {
+              "networking": {
+                "wifi-info": true
+              }
+            }
+          }
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +39,8 @@
         "android.permission.SCHEDULE_EXACT_ALARM",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "INTERNET"
+        "INTERNET",
+        "android.permission.VIBRATE"
       ]
     },
     "web": {

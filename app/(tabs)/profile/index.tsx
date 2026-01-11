@@ -1,7 +1,7 @@
 import { Film, Heart, Clock, TrendingUp, Settings, User, Bell, Shield, Moon, Globe, Volume2, Vibrate, ChevronRight, BarChart3, Award, Target, Flame, Zap, Star, Tv, Camera, Edit3, Share2, Users, MessageCircle, Trophy, Gift, CloudUpload, AlertTriangle } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, Href } from 'expo-router';
 import {
   StyleSheet,
   Text,
@@ -180,7 +180,7 @@ export default function ProfileScreen() {
             <Text style={styles.subtitle}>{bio}</Text>
           </View>
           <View style={styles.socialActions}>
-            <Pressable style={styles.socialButton} onPress={() => router.push('/social')}>
+            <Pressable style={styles.socialButton} onPress={() => router.push('/social' as Href)}>
               <Users size={20} color={Colors.dark.text} />
               <Text style={styles.socialButtonText}>{t('profile.friends')}</Text>
             </Pressable>
@@ -191,7 +191,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <Pressable onPress={() => router.push('/stats')}>
+        <Pressable onPress={() => router.push('/stats' as Href)}>
           <View style={styles.statsGrid}>
             {statCards.map((stat, index) => (
               <GlassPanel key={index} style={styles.statCard}>
@@ -446,7 +446,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Pressable 
             style={styles.backupReminderCard}
-            onPress={() => router.push('/export-data')}
+            onPress={() => router.push('/export-data' as Href)}
           >
             <View style={styles.backupReminderIcon}>
               <AlertTriangle size={24} color={Colors.dark.warning} />
@@ -468,7 +468,7 @@ export default function ProfileScreen() {
           <GlassPanel style={styles.featureCard}>
             <Pressable 
               style={styles.featureItem}
-              onPress={() => router.push('/watch-party?title=Breaking Bad&id=169')}
+              onPress={() => router.push('/watch-party?title=Breaking Bad&id=169' as Href)}
             >
               <Text style={styles.featureBullet}>🎥</Text>
               <Text style={styles.featureText}>{t('profile.watchParty')}</Text>
@@ -477,7 +477,7 @@ export default function ProfileScreen() {
             <View style={styles.settingDivider} />
             <Pressable 
               style={styles.featureItem}
-              onPress={() => router.push('/smart-lists')}
+              onPress={() => router.push('/smart-lists' as Href)}
             >
               <Text style={styles.featureBullet}>✨</Text>
               <Text style={styles.featureText}>{t('profile.smartLists')}</Text>
@@ -486,7 +486,7 @@ export default function ProfileScreen() {
             <View style={styles.settingDivider} />
             <Pressable 
               style={styles.featureItem}
-              onPress={() => router.push('/export-data')}
+              onPress={() => router.push('/export-data' as Href)}
             >
               <Text style={styles.featureBullet}>💾</Text>
               <Text style={styles.featureText}>{t('profile.exportData')}</Text>
@@ -495,7 +495,7 @@ export default function ProfileScreen() {
             <View style={styles.settingDivider} />
             <Pressable 
               style={styles.featureItem}
-              onPress={() => router.push('/notification-settings')}
+              onPress={() => router.push('/notification-settings' as Href)}
             >
               <Text style={styles.featureBullet}>🔔</Text>
               <Text style={styles.featureText}>{t('profile.notificationSettings')}</Text>
@@ -652,7 +652,7 @@ export default function ProfileScreen() {
                     onPress={() => {
                       setShowSettingsModal(false);
                       setTimeout(() => {
-                        router.push('/onboarding');
+                        router.push('/onboarding' as Href);
                       }, 300);
                     }}
                   >

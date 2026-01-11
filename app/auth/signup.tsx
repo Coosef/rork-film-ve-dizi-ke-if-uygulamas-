@@ -1,6 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, Href } from 'expo-router';
 import { useState } from 'react';
 import Colors from '@/constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -69,7 +69,7 @@ export default function SignUpScreen() {
         [
           {
             text: t('common.ok'),
-            onPress: () => router.replace('/auth/login'),
+            onPress: () => router.replace('/auth/login' as Href),
           },
         ]
       );
@@ -168,7 +168,7 @@ export default function SignUpScreen() {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>{t('auth.alreadyHaveAccount')} </Text>
-              <TouchableOpacity onPress={() => router.replace('/auth/login')} disabled={isLoading}>
+              <TouchableOpacity onPress={() => router.replace('/auth/login' as Href)} disabled={isLoading}>
                 <Text style={styles.footerLink}>{t('auth.signIn')}</Text>
               </TouchableOpacity>
             </View>
