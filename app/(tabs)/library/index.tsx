@@ -223,7 +223,7 @@ export default function LibraryScreen() {
             </Pressable>
           </View>
         </View>
-        {movies.length > 0 && activeTab !== 'smart' && (
+        {movieIds.length > 0 && movies.length > 0 && activeTab !== 'smart' && (
           <View style={styles.completionCard}>
             <View style={styles.completionHeader}>
               <Text style={styles.completionTitle}>{t('library.completionRate')}</Text>
@@ -462,8 +462,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.dark.background,
   },
   header: {
-    padding: 16,
-    paddingTop: 60,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
   headerRow: {
     flexDirection: 'row',
