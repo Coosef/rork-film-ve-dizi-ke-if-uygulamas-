@@ -517,11 +517,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   tabsContainer: {
-    maxHeight: 60,
+    minHeight: 50,
+    marginBottom: 8,
   },
   tabsContent: {
     paddingHorizontal: 16,
+    paddingVertical: 8,
     gap: 12,
+    alignItems: 'center' as const,
   },
   tab: {
     flexDirection: 'row',
