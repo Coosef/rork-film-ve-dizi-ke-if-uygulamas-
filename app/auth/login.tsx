@@ -1,11 +1,11 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal, Pressable } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Modal, Pressable, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Href } from 'expo-router';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
 import Colors from '@/constants/colors';
-import { Film, Mail, Lock, Chrome, Apple, Languages } from 'lucide-react-native';
+import { Mail, Lock, Chrome, Apple, Languages } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const LANGUAGE_NAMES: Record<Language, string> = {
@@ -125,7 +125,11 @@ export default function LoginScreen() {
         >
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Film size={48} color={Colors.dark.primary} strokeWidth={2.5} />
+              <Image 
+                source={require('@/assets/images/icon.png')} 
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.title}>Filmoji</Text>
             <Text style={styles.subtitle}>{t('auth.welcomeBack')}</Text>
@@ -282,13 +286,15 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: Colors.dark.backgroundSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 100,
+    height: 100,
+    borderRadius: 24,
     marginBottom: 24,
+    overflow: 'hidden',
+  },
+  logo: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 32,

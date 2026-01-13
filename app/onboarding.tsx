@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, Href } from 'expo-router';
-import { Sparkles, Check } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -9,6 +9,7 @@ import {
   Pressable,
   ScrollView,
   Dimensions,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -77,7 +78,11 @@ export default function OnboardingScreen() {
       <View style={[styles.content, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 20 }]}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Sparkles size={48} color={Colors.dark.primary} />
+              <Image 
+                source={require('@/assets/images/icon.png')} 
+                style={styles.iconImage}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.title}>
               {isReturningUser ? t('onboarding.genrePreferences') : t('onboarding.welcome')}
@@ -185,15 +190,15 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.dark.glass.background,
-    borderWidth: 1,
-    borderColor: Colors.dark.glass.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 100,
+    height: 100,
+    borderRadius: 24,
     marginBottom: 24,
+    overflow: 'hidden',
+  },
+  iconImage: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     fontSize: 32,
