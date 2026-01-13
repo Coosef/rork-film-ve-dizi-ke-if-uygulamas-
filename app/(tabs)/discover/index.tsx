@@ -44,6 +44,7 @@ export default function DiscoverScreen() {
   const [page, setPage] = useState(1);
   const [allMovies, setAllMovies] = useState<MediaItem[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
+  const isAnimatingRef = useRef(false);
   const MAX_UNDO_STACK = 10;
   
   const position = useRef(new Animated.ValueXY()).current;
@@ -70,12 +71,12 @@ export default function DiscoverScreen() {
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => !isAnimating,
+      onStartShouldSetPanResponder: () => !isAnimatingRef.current,
       onMoveShouldSetPanResponder: (_, gesture) => {
-        return !isAnimating && (Math.abs(gesture.dx) > 5 || Math.abs(gesture.dy) > 5);
+        return !isAnimatingRef.current && (Math.abs(gesture.dx) > 5 || Math.abs(gesture.dy) > 5);
       },
       onPanResponderMove: (_, gesture) => {
-        if (!isAnimating) {
+        if (!isAnimatingRef.current) {
           position.setValue({ x: gesture.dx, y: gesture.dy });
           const progress = Math.min(Math.abs(gesture.dx) / (SCREEN_WIDTH / 4), 1);
           nextCardScale.setValue(0.95 + 0.05 * progress);
@@ -83,9 +84,12 @@ export default function DiscoverScreen() {
         }
       },
       onPanResponderRelease: (_, gesture) => {
+        if (isAnimatingRef.current) return;
+        
         if (Math.abs(gesture.dx) > SWIPE_THRESHOLD) {
           const direction = gesture.dx > 0 ? 'right' : 'left';
           const toValue = direction === 'right' ? SCREEN_WIDTH + 100 : -SCREEN_WIDTH - 100;
+          isAnimatingRef.current = true;
           setIsAnimating(true);
           Animated.timing(position, {
             toValue: { x: toValue, y: gesture.dy },
@@ -196,11 +200,13 @@ export default function DiscoverScreen() {
     position.setValue({ x: 0, y: 0 });
     nextCardScale.setValue(0.95);
     nextCardOpacity.setValue(0.8);
+    isAnimatingRef.current = false;
     setIsAnimating(false);
   };
 
   const handleLike = () => {
-    if (isAnimating) return;
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
     setIsAnimating(true);
     Animated.timing(position, {
       toValue: { x: SCREEN_WIDTH + 100, y: 0 },
@@ -212,7 +218,8 @@ export default function DiscoverScreen() {
   };
 
   const handlePass = () => {
-    if (isAnimating) return;
+    if (isAnimatingRef.current) return;
+    isAnimatingRef.current = true;
     setIsAnimating(true);
     Animated.timing(position, {
       toValue: { x: -SCREEN_WIDTH - 100, y: 0 },
