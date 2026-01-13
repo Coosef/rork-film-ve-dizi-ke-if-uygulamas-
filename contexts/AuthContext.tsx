@@ -1,7 +1,9 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useMemo, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, getRedirectUrl } from '@/lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
+import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
   const [session, setSession] = useState<Session | null>(null);
@@ -41,19 +43,91 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const signInWithGoogle = async () => {
     console.log('[Auth] Sign in with Google');
+    
+    if (Platform.OS === 'web') {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: getRedirectUrl(),
+        },
+      });
+      if (error) throw error;
+      return data;
+    }
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: {
+        redirectTo: getRedirectUrl(),
+        skipBrowserRedirect: true,
+      },
     });
+    
     if (error) throw error;
+    
+    if (data?.url) {
+      const result = await WebBrowser.openAuthSessionAsync(data.url, getRedirectUrl());
+      
+      if (result.type === 'success' && result.url) {
+        const url = new URL(result.url);
+        const access_token = url.searchParams.get('access_token');
+        const refresh_token = url.searchParams.get('refresh_token');
+        
+        if (access_token && refresh_token) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+          if (sessionError) throw sessionError;
+        }
+      }
+    }
+    
     return data;
   };
 
   const signInWithApple = async () => {
     console.log('[Auth] Sign in with Apple');
+    
+    if (Platform.OS === 'web') {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: getRedirectUrl(),
+        },
+      });
+      if (error) throw error;
+      return data;
+    }
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'apple',
+      options: {
+        redirectTo: getRedirectUrl(),
+        skipBrowserRedirect: true,
+      },
     });
+    
     if (error) throw error;
+    
+    if (data?.url) {
+      const result = await WebBrowser.openAuthSessionAsync(data.url, getRedirectUrl());
+      
+      if (result.type === 'success' && result.url) {
+        const url = new URL(result.url);
+        const access_token = url.searchParams.get('access_token');
+        const refresh_token = url.searchParams.get('refresh_token');
+        
+        if (access_token && refresh_token) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
+          if (sessionError) throw sessionError;
+        }
+      }
+    }
+    
     return data;
   };
 
