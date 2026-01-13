@@ -39,10 +39,16 @@ export const [SearchHistoryProvider, useSearchHistory] = createContextHook(() =>
         }
       }
     } catch (error) {
-      console.error('[SearchHistory] Error loading history:', error);
-      const stored = await AsyncStorage.getItem(SEARCH_HISTORY_KEY);
-      if (stored) {
-        setHistory(JSON.parse(stored));
+      console.error('[SearchHistory] Error loading history:', error instanceof Error ? error.message : String(error));
+      console.error('[SearchHistory] Full error:', JSON.stringify(error, null, 2));
+      try {
+        const stored = await AsyncStorage.getItem(SEARCH_HISTORY_KEY);
+        if (stored) {
+          setHistory(JSON.parse(stored));
+          console.log('[SearchHistory] Fallback to local storage successful');
+        }
+      } catch (localError) {
+        console.error('[SearchHistory] Failed to load from local storage:', localError instanceof Error ? localError.message : String(localError));
       }
     } finally {
       setIsLoading(false);
@@ -76,7 +82,7 @@ export const [SearchHistoryProvider, useSearchHistory] = createContextHook(() =>
       if (error) throw error;
       console.log('[SearchHistory] Synced to Supabase:', query);
     } catch (error) {
-      console.error('[SearchHistory] Failed to sync to Supabase:', error);
+      console.error('[SearchHistory] Failed to sync to Supabase:', error instanceof Error ? error.message : String(error));
     }
   }, [isAuthenticated, user]);
 
@@ -93,7 +99,7 @@ export const [SearchHistoryProvider, useSearchHistory] = createContextHook(() =>
       if (error) throw error;
       console.log('[SearchHistory] Deleted from Supabase:', query);
     } catch (error) {
-      console.error('[SearchHistory] Failed to delete from Supabase:', error);
+      console.error('[SearchHistory] Failed to delete from Supabase:', error instanceof Error ? error.message : String(error));
     }
   }, [isAuthenticated, user]);
 
@@ -109,7 +115,7 @@ export const [SearchHistoryProvider, useSearchHistory] = createContextHook(() =>
       if (error) throw error;
       console.log('[SearchHistory] Cleared Supabase history');
     } catch (error) {
-      console.error('[SearchHistory] Failed to clear Supabase:', error);
+      console.error('[SearchHistory] Failed to clear Supabase:', error instanceof Error ? error.message : String(error));
     }
   }, [isAuthenticated, user]);
 

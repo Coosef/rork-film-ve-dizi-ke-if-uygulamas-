@@ -54,10 +54,16 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
         }
       }
     } catch (error) {
-      console.error('[LibraryContext] Failed to load library:', error);
-      const stored = await AsyncStorage.getItem(LIBRARY_KEY);
-      if (stored) {
-        setInteractions(JSON.parse(stored));
+      console.error('[LibraryContext] Failed to load library:', error instanceof Error ? error.message : String(error));
+      console.error('[LibraryContext] Full error:', JSON.stringify(error, null, 2));
+      try {
+        const stored = await AsyncStorage.getItem(LIBRARY_KEY);
+        if (stored) {
+          setInteractions(JSON.parse(stored));
+          console.log('[LibraryContext] Fallback to local storage successful');
+        }
+      } catch (localError) {
+        console.error('[LibraryContext] Failed to load from local storage:', localError instanceof Error ? localError.message : String(localError));
       }
     } finally {
       setIsLoading(false);
@@ -104,7 +110,7 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
       if (error) throw error;
       console.log('[LibraryContext] Synced to Supabase:', interaction.mediaId);
     } catch (error) {
-      console.error('[LibraryContext] Failed to sync to Supabase:', error);
+      console.error('[LibraryContext] Failed to sync to Supabase:', error instanceof Error ? error.message : String(error));
     } finally {
       setIsSyncing(false);
     }
@@ -124,7 +130,7 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
       if (error) throw error;
       console.log('[LibraryContext] Deleted from Supabase:', mediaId);
     } catch (error) {
-      console.error('[LibraryContext] Failed to delete from Supabase:', error);
+      console.error('[LibraryContext] Failed to delete from Supabase:', error instanceof Error ? error.message : String(error));
     }
   }, [isAuthenticated, user]);
 
