@@ -4,50 +4,131 @@ import { useCallback, useMemo, useState, useEffect } from 'react';
 import { Interaction, InteractionType, LibraryStats, WatchProgress, Review } from '@/types/library';
 import { MediaType } from '@/types/tvmaze';
 import { hapticFeedback } from '@/utils/haptics';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from './AuthContext';
 
 const LIBRARY_KEY = '@library_interactions';
 
 export const [LibraryProvider, useLibrary] = createContextHook(() => {
+  const { user, isAuthenticated } = useAuth();
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  useEffect(() => {
-    loadLibrary();
-  }, []);
-
-  const loadLibrary = async () => {
+  const loadLibrary = useCallback(async () => {
     try {
-      const timeoutPromise = new Promise((resolve) => {
-        setTimeout(() => resolve(null), 500);
-      });
+      setIsLoading(true);
       
-      const storagePromise = AsyncStorage.getItem(LIBRARY_KEY);
-      const stored = await Promise.race([storagePromise, timeoutPromise]) as string | null;
-      
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setInteractions(parsed);
-        console.log('[LibraryContext] Successfully loaded library:', parsed.length, 'items');
+      if (isAuthenticated && user) {
+        console.log('[LibraryContext] Loading from Supabase for user:', user.email);
+        const { data, error } = await supabase
+          .from('interactions')
+          .select('*')
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+        
+        const supabaseInteractions: Interaction[] = (data || []).map(item => ({
+          id: item.id,
+          mediaId: item.media_id,
+          mediaType: item.media_type as MediaType,
+          type: item.type as InteractionType,
+          rating: item.rating,
+          note: item.note,
+          watchProgress: item.watch_progress,
+          review: item.review,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+        }));
+        
+        setInteractions(supabaseInteractions);
+        await AsyncStorage.setItem(LIBRARY_KEY, JSON.stringify(supabaseInteractions));
+        console.log('[LibraryContext] Loaded from Supabase:', supabaseInteractions.length, 'items');
       } else {
-        console.log('[LibraryContext] No library data found, starting fresh');
+        console.log('[LibraryContext] User not authenticated, loading from local storage');
+        const stored = await AsyncStorage.getItem(LIBRARY_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setInteractions(parsed);
+          console.log('[LibraryContext] Loaded from local:', parsed.length, 'items');
+        }
       }
     } catch (error) {
       console.error('[LibraryContext] Failed to load library:', error);
+      const stored = await AsyncStorage.getItem(LIBRARY_KEY);
+      if (stored) {
+        setInteractions(JSON.parse(stored));
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    loadLibrary();
+  }, [loadLibrary]);
 
   const saveLibrary = async (newInteractions: Interaction[]) => {
     try {
       await AsyncStorage.setItem(LIBRARY_KEY, JSON.stringify(newInteractions));
-      console.log('[LibraryContext] Successfully saved library:', newInteractions.length, 'items');
+      console.log('[LibraryContext] Saved to local storage');
     } catch (error) {
-      console.error('[LibraryContext] Failed to save library:', error);
+      console.error('[LibraryContext] Failed to save to local storage:', error);
     }
   };
 
-  const addInteraction = useCallback((
+  const syncToSupabase = useCallback(async (interaction: Interaction) => {
+    if (!isAuthenticated || !user) {
+      console.log('[LibraryContext] Not syncing to Supabase - user not authenticated');
+      return;
+    }
+
+    try {
+      setIsSyncing(true);
+      const { error } = await supabase
+        .from('interactions')
+        .upsert({
+          user_id: user.id,
+          media_id: interaction.mediaId,
+          media_type: interaction.mediaType,
+          type: interaction.type,
+          rating: interaction.rating,
+          note: interaction.note,
+          watch_progress: interaction.watchProgress,
+          review: interaction.review,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id,media_id,media_type'
+        });
+      
+      if (error) throw error;
+      console.log('[LibraryContext] Synced to Supabase:', interaction.mediaId);
+    } catch (error) {
+      console.error('[LibraryContext] Failed to sync to Supabase:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [isAuthenticated, user]);
+
+  const deleteFromSupabase = useCallback(async (mediaId: number, mediaType: MediaType) => {
+    if (!isAuthenticated || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('interactions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('media_id', mediaId)
+        .eq('media_type', mediaType);
+      
+      if (error) throw error;
+      console.log('[LibraryContext] Deleted from Supabase:', mediaId);
+    } catch (error) {
+      console.error('[LibraryContext] Failed to delete from Supabase:', error);
+    }
+  }, [isAuthenticated, user]);
+
+  const addInteraction = useCallback(async (
     mediaId: number,
     mediaType: MediaType,
     type: InteractionType,
@@ -57,24 +138,23 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
     review?: Review
   ) => {
     console.log('[Library] Adding interaction for', mediaId, 'type:', type);
-    setInteractions(prev => {
-      const filtered = prev.filter(i => !(i.mediaId === mediaId && i.mediaType === mediaType));
-      const newInteraction: Interaction = {
-        id: `${mediaType}-${mediaId}-${Date.now()}`,
-        mediaId,
-        mediaType,
-        type,
-        rating,
-        note,
-        watchProgress,
-        review,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      const newInteractions = [...filtered, newInteraction];
-      saveLibrary(newInteractions);
-      return newInteractions;
-    });
+    const filtered = interactions.filter(i => !(i.mediaId === mediaId && i.mediaType === mediaType));
+    const newInteraction: Interaction = {
+      id: `${mediaType}-${mediaId}-${Date.now()}`,
+      mediaId,
+      mediaType,
+      type,
+      rating,
+      note,
+      watchProgress,
+      review,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const newInteractions = [...filtered, newInteraction];
+    setInteractions(newInteractions);
+    await saveLibrary(newInteractions);
+    await syncToSupabase(newInteraction);
     
     if (type === 'favorite') {
       hapticFeedback.success();
@@ -83,17 +163,16 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
     } else {
       hapticFeedback.light();
     }
-  }, []);
+  }, [interactions, syncToSupabase]);
 
-  const removeInteraction = useCallback((mediaId: number, mediaType: MediaType) => {
+  const removeInteraction = useCallback(async (mediaId: number, mediaType: MediaType) => {
     console.log('[Library] Removing interaction for', mediaId);
     hapticFeedback.light();
-    setInteractions(prev => {
-      const newInteractions = prev.filter(i => !(i.mediaId === mediaId && i.mediaType === mediaType));
-      saveLibrary(newInteractions);
-      return newInteractions;
-    });
-  }, []);
+    const newInteractions = interactions.filter(i => !(i.mediaId === mediaId && i.mediaType === mediaType));
+    setInteractions(newInteractions);
+    await saveLibrary(newInteractions);
+    await deleteFromSupabase(mediaId, mediaType);
+  }, [interactions, deleteFromSupabase]);
 
   const getInteraction = useCallback((mediaId: number, mediaType: MediaType): Interaction | undefined => {
     return interactions.find(i => i.mediaId === mediaId && i.mediaType === mediaType);
@@ -313,6 +392,7 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
   return useMemo(() => ({
     interactions,
     isLoading,
+    isSyncing,
     addInteraction,
     removeInteraction,
     getInteraction,
@@ -328,5 +408,5 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
     isEpisodeWatched,
     addReview,
     getReview,
-  }), [interactions, isLoading, addInteraction, removeInteraction, getInteraction, getInteractionsByType, isInWatchlist, isWatched, isWatching, isFavorite, getStats, updateWatchProgress, toggleEpisodeWatched, markAllEpisodesWatched, isEpisodeWatched, addReview, getReview]);
+  }), [interactions, isLoading, isSyncing, addInteraction, removeInteraction, getInteraction, getInteractionsByType, isInWatchlist, isWatched, isWatching, isFavorite, getStats, updateWatchProgress, toggleEpisodeWatched, markAllEpisodesWatched, isEpisodeWatched, addReview, getReview]);
 });

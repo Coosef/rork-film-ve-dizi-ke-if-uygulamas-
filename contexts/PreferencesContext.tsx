@@ -2,6 +2,8 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { UserPreferences } from '@/types/library';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from './AuthContext';
 
 const PREFERENCES_KEY = '@user_preferences';
 
@@ -17,53 +19,108 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 };
 
 export const [PreferencesProvider, usePreferences] = createContextHook(() => {
+  const { user, isAuthenticated } = useAuth();
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadPreferences();
-  }, []);
-
-  const loadPreferences = async () => {
+  const loadPreferences = useCallback(async () => {
     try {
-      const timeoutPromise = new Promise((resolve) => {
-        setTimeout(() => resolve(null), 500);
-      });
+      setIsLoading(true);
       
-      const storagePromise = AsyncStorage.getItem(PREFERENCES_KEY);
-      const stored = await Promise.race([storagePromise, timeoutPromise]) as string | null;
-      
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setPreferences(parsed);
-        console.log('[PreferencesContext] Successfully loaded preferences:', parsed);
+      if (isAuthenticated && user) {
+        console.log('[PreferencesContext] Loading from Supabase for user:', user.email);
+        const { data, error } = await supabase
+          .from('preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') throw error;
+        
+        if (data) {
+          const supabasePrefs: UserPreferences = {
+            theme: data.theme as 'light' | 'dark',
+            contentLanguage: data.content_language,
+            uiLanguage: data.ui_language,
+            ageRestriction: data.age_restriction,
+            autoPlayTrailers: data.auto_play_trailers,
+            hapticsEnabled: data.haptics_enabled,
+            favoriteGenres: data.favorite_genres || [],
+            hasCompletedOnboarding: data.has_completed_onboarding,
+          };
+          setPreferences(supabasePrefs);
+          await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(supabasePrefs));
+          console.log('[PreferencesContext] Loaded from Supabase');
+        } else {
+          console.log('[PreferencesContext] No preferences in Supabase, using defaults');
+          setPreferences(DEFAULT_PREFERENCES);
+        }
       } else {
-        console.log('[PreferencesContext] No preferences found, using defaults');
+        console.log('[PreferencesContext] Loading from local storage');
+        const stored = await AsyncStorage.getItem(PREFERENCES_KEY);
+        if (stored) {
+          setPreferences(JSON.parse(stored));
+        }
       }
     } catch (error) {
       console.error('[PreferencesContext] Failed to load preferences:', error);
+      const stored = await AsyncStorage.getItem(PREFERENCES_KEY);
+      if (stored) {
+        setPreferences(JSON.parse(stored));
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    loadPreferences();
+  }, [loadPreferences]);
 
   const savePreferences = async (newPreferences: UserPreferences) => {
     try {
       await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(newPreferences));
-      console.log('[PreferencesContext] Successfully saved preferences');
+      console.log('[PreferencesContext] Saved to local storage');
     } catch (error) {
-      console.error('[PreferencesContext] Failed to save preferences:', error);
+      console.error('[PreferencesContext] Failed to save to local storage:', error);
     }
   };
 
+  const syncToSupabase = useCallback(async (prefs: UserPreferences) => {
+    if (!isAuthenticated || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('preferences')
+        .upsert({
+          user_id: user.id,
+          theme: prefs.theme,
+          content_language: prefs.contentLanguage,
+          ui_language: prefs.uiLanguage,
+          age_restriction: prefs.ageRestriction,
+          auto_play_trailers: prefs.autoPlayTrailers,
+          haptics_enabled: prefs.hapticsEnabled,
+          favorite_genres: prefs.favoriteGenres,
+          has_completed_onboarding: prefs.hasCompletedOnboarding,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        });
+      
+      if (error) throw error;
+      console.log('[PreferencesContext] Synced to Supabase');
+    } catch (error) {
+      console.error('[PreferencesContext] Failed to sync to Supabase:', error);
+    }
+  }, [isAuthenticated, user]);
+
   const updatePreferences = useCallback(async (updates: Partial<UserPreferences>) => {
     console.log('[Preferences] Updating:', updates);
-    setPreferences(prev => {
-      const newPreferences = { ...prev, ...updates };
-      savePreferences(newPreferences);
-      return newPreferences;
-    });
-  }, []);
+    const newPreferences = { ...preferences, ...updates };
+    setPreferences(newPreferences);
+    await savePreferences(newPreferences);
+    await syncToSupabase(newPreferences);
+  }, [preferences, syncToSupabase]);
 
   const toggleFavoriteGenre = useCallback((genreId: number) => {
     const currentGenres = preferences.favoriteGenres || [];
