@@ -111,6 +111,7 @@ export const [PreferencesProvider, usePreferences] = createContextHook(() => {
       console.log('[PreferencesContext] Synced to Supabase');
     } catch (error) {
       console.error('[PreferencesContext] Failed to sync to Supabase:', error);
+      console.error('[PreferencesContext] Full error:', JSON.stringify(error, null, 2));
     }
   }, [isAuthenticated, user]);
 
