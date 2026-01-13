@@ -45,7 +45,12 @@ export default function DiscoverScreen() {
   const [allMovies, setAllMovies] = useState<MediaItem[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const isAnimatingRef = useRef(false);
+  const currentIndexRef = useRef(currentIndex);
   const MAX_UNDO_STACK = 10;
+
+  React.useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
   
   const position = useRef(new Animated.ValueXY()).current;
   const nextCardScale = useRef(new Animated.Value(0.95)).current;
@@ -69,8 +74,11 @@ export default function DiscoverScreen() {
     extrapolate: 'clamp',
   });
 
-  const panResponder = useRef(
-    PanResponder.create({
+  const handleSwipeCompleteRef = useRef<(direction: 'left' | 'right') => void>(() => {});
+  const handleCardPressRef = useRef<() => void>(() => {});
+
+  const panResponder = React.useMemo(
+    () => PanResponder.create({
       onStartShouldSetPanResponder: () => !isAnimatingRef.current,
       onMoveShouldSetPanResponder: (_, gesture) => {
         return !isAnimatingRef.current && (Math.abs(gesture.dx) > 5 || Math.abs(gesture.dy) > 5);
@@ -90,16 +98,15 @@ export default function DiscoverScreen() {
           const direction = gesture.dx > 0 ? 'right' : 'left';
           const toValue = direction === 'right' ? SCREEN_WIDTH + 100 : -SCREEN_WIDTH - 100;
           isAnimatingRef.current = true;
-          setIsAnimating(true);
           Animated.timing(position, {
             toValue: { x: toValue, y: gesture.dy },
             duration: 200,
             useNativeDriver: false,
           }).start(() => {
-            handleSwipeComplete(direction);
+            handleSwipeCompleteRef.current(direction);
           });
         } else if (Math.abs(gesture.dx) < 10 && Math.abs(gesture.dy) < 10) {
-          handleCardPress();
+          handleCardPressRef.current();
           Animated.parallel([
             Animated.spring(position, {
               toValue: { x: 0, y: 0 },
@@ -131,8 +138,9 @@ export default function DiscoverScreen() {
           ]).start();
         }
       },
-    })
-  ).current;
+    }),
+    [position, nextCardScale, nextCardOpacity]
+  );
 
   const discoverQuery = useQuery({
     queryKey: ['discover', page, selectedGenre, minRating, minYear, maxYear],
@@ -179,8 +187,9 @@ export default function DiscoverScreen() {
   const currentMovie = movies[currentIndex];
   const nextMovie = movies[currentIndex + 1];
 
-  const handleSwipeComplete = (direction: 'left' | 'right') => {
-    const movie = movies[currentIndex];
+  const handleSwipeComplete = React.useCallback((direction: 'left' | 'right') => {
+    const idx = currentIndexRef.current;
+    const movie = movies[idx];
     if (!movie) return;
 
     if (direction === 'right') {
@@ -192,7 +201,7 @@ export default function DiscoverScreen() {
     }
 
     setSwipedCards(prev => {
-      const newStack = [...prev, { index: currentIndex, direction }];
+      const newStack = [...prev, { index: idx, direction }];
       return newStack.slice(-MAX_UNDO_STACK);
     });
     setCurrentIndex(prev => prev + 1);
@@ -202,7 +211,11 @@ export default function DiscoverScreen() {
     nextCardOpacity.setValue(0.8);
     isAnimatingRef.current = false;
     setIsAnimating(false);
-  };
+  }, [movies, addInteraction, position, nextCardScale, nextCardOpacity]);
+
+  React.useEffect(() => {
+    handleSwipeCompleteRef.current = handleSwipeComplete;
+  }, [handleSwipeComplete]);
 
   const handleLike = () => {
     if (isAnimatingRef.current) return;
@@ -255,11 +268,16 @@ export default function DiscoverScreen() {
     }
   };
 
-  const handleCardPress = () => {
-    if (currentMovie && !isAnimating) {
-      router.push(`/movie/${currentMovie.id}` as any);
+  const handleCardPress = React.useCallback(() => {
+    const movie = movies[currentIndexRef.current];
+    if (movie && !isAnimatingRef.current) {
+      router.push(`/movie/${movie.id}` as any);
     }
-  };
+  }, [movies, router]);
+
+  React.useEffect(() => {
+    handleCardPressRef.current = handleCardPress;
+  }, [handleCardPress]);
 
   const handleGenreSelect = (genre: string) => {
     setSelectedGenre(genre === selectedGenre ? null : genre);
