@@ -71,6 +71,9 @@ export default function DiscoverScreen() {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => !isAnimating,
+      onMoveShouldSetPanResponder: (_, gesture) => {
+        return !isAnimating && (Math.abs(gesture.dx) > 5 || Math.abs(gesture.dy) > 5);
+      },
       onPanResponderMove: (_, gesture) => {
         if (!isAnimating) {
           position.setValue({ x: gesture.dx, y: gesture.dy });
@@ -91,6 +94,22 @@ export default function DiscoverScreen() {
           }).start(() => {
             handleSwipeComplete(direction);
           });
+        } else if (Math.abs(gesture.dx) < 10 && Math.abs(gesture.dy) < 10) {
+          handleCardPress();
+          Animated.parallel([
+            Animated.spring(position, {
+              toValue: { x: 0, y: 0 },
+              useNativeDriver: false,
+            }),
+            Animated.spring(nextCardScale, {
+              toValue: 0.95,
+              useNativeDriver: false,
+            }),
+            Animated.spring(nextCardOpacity, {
+              toValue: 0.8,
+              useNativeDriver: false,
+            }),
+          ]).start();
         } else {
           Animated.parallel([
             Animated.spring(position, {
@@ -383,51 +402,45 @@ export default function DiscoverScreen() {
           ]}
           {...panResponder.panHandlers}
         >
-          <Pressable 
-            style={styles.cardPressable}
-            onPress={handleCardPress}
-            disabled={isAnimating}
-          >
-            <Image
-              source={{ uri: currentMovie.posterPath || 'https://via.placeholder.com/500x750?text=No+Image' }}
-              style={styles.cardImage}
-              contentFit="cover"
-            />
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.9)']}
-              style={styles.cardGradient}
-            />
-            
-            <Animated.View style={[styles.likeStamp, { opacity: likeOpacity }]}>
-              <Text style={styles.stampText}>{t('discover.like')}</Text>
-            </Animated.View>
-            
-            <Animated.View style={[styles.nopeStamp, { opacity: nopeOpacity }]}>
-              <Text style={styles.stampText}>{t('discover.pass')}</Text>
-            </Animated.View>
+          <Image
+            source={{ uri: currentMovie.posterPath || 'https://via.placeholder.com/500x750?text=No+Image' }}
+            style={styles.cardImage}
+            contentFit="cover"
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.9)']}
+            style={styles.cardGradient}
+          />
+          
+          <Animated.View style={[styles.likeStamp, { opacity: likeOpacity }]}>
+            <Text style={styles.stampText}>{t('discover.like')}</Text>
+          </Animated.View>
+          
+          <Animated.View style={[styles.nopeStamp, { opacity: nopeOpacity }]}>
+            <Text style={styles.stampText}>{t('discover.pass')}</Text>
+          </Animated.View>
 
-            <View style={styles.cardInfo}>
-              <Text style={styles.cardTitle}>{currentMovie.title}</Text>
-              <View style={styles.cardMeta}>
-                <Text style={styles.cardYear}>
-                  {currentMovie.releaseDate ? new Date(currentMovie.releaseDate).getFullYear() : ''}
-                </Text>
-                <View style={styles.ratingContainer}>
-                  <Text style={styles.ratingText}>⭐ {currentMovie.voteAverage.toFixed(1)}</Text>
-                </View>
-              </View>
-              {currentMovie.genres.length > 0 && (
-                <View style={styles.genresContainer}>
-                  {currentMovie.genres.slice(0, 3).map((genre) => (
-                    <GenreBadge key={genre} genre={genre} variant="primary" />
-                  ))}
-                </View>
-              )}
-              <Text style={styles.cardOverview} numberOfLines={3}>
-                {currentMovie.overview}
+          <View style={styles.cardInfo}>
+            <Text style={styles.cardTitle}>{currentMovie.title}</Text>
+            <View style={styles.cardMeta}>
+              <Text style={styles.cardYear}>
+                {currentMovie.releaseDate ? new Date(currentMovie.releaseDate).getFullYear() : ''}
               </Text>
+              <View style={styles.ratingContainer}>
+                <Text style={styles.ratingText}>⭐ {currentMovie.voteAverage.toFixed(1)}</Text>
+              </View>
             </View>
-          </Pressable>
+            {currentMovie.genres.length > 0 && (
+              <View style={styles.genresContainer}>
+                {currentMovie.genres.slice(0, 3).map((genre) => (
+                  <GenreBadge key={genre} genre={genre} variant="primary" />
+                ))}
+              </View>
+            )}
+            <Text style={styles.cardOverview} numberOfLines={3}>
+              {currentMovie.overview}
+            </Text>
+          </View>
         </Animated.View>
       </View>
 
@@ -673,13 +686,6 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: '100%',
-  },
-  cardPressable: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
   },
   cardGradient: {
     position: 'absolute' as const,
