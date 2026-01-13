@@ -26,7 +26,10 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
           .select('*')
           .eq('user_id', user.id);
         
-        if (error) throw error;
+        if (error) {
+          console.error('[LibraryContext] Supabase error:', error);
+          throw error;
+        }
         
         const supabaseInteractions: Interaction[] = (data || []).map(item => ({
           id: item.id,

@@ -47,13 +47,21 @@ export const [PreferencesProvider, usePreferences] = createContextHook(() => {
             hapticsEnabled: data.haptics_enabled,
             favoriteGenres: data.favorite_genres || [],
             hasCompletedOnboarding: data.has_completed_onboarding,
+            hasSeenBackupWarning: data.has_seen_backup_warning,
           };
           setPreferences(supabasePrefs);
           await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(supabasePrefs));
           console.log('[PreferencesContext] Loaded from Supabase');
         } else {
           console.log('[PreferencesContext] No preferences in Supabase, using defaults');
-          setPreferences(DEFAULT_PREFERENCES);
+          const stored = await AsyncStorage.getItem(PREFERENCES_KEY);
+          if (stored) {
+            setPreferences(JSON.parse(stored));
+            console.log('[PreferencesContext] Using local storage preferences');
+          } else {
+            setPreferences(DEFAULT_PREFERENCES);
+            console.log('[PreferencesContext] Using default preferences');
+          }
         }
       } else {
         console.log('[PreferencesContext] Loading from local storage');

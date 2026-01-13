@@ -11,12 +11,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[Auth] Initial session:', session?.user?.email);
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        console.log('[Auth] Initial session:', session?.user?.email);
+        setSession(session);
+        setUser(session?.user ?? null);
+      })
+      .catch((error) => {
+        console.error('[Auth] Failed to get session:', error);
+        setSession(null);
+        setUser(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('[Auth] Auth state changed:', _event, session?.user?.email);
