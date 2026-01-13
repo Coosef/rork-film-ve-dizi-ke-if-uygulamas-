@@ -117,7 +117,7 @@ CREATE POLICY "Users can delete their own search history"
 
 -- 6. Triggers (otomatik profil ve preferences oluşturma)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, email, full_name)
   VALUES (
@@ -131,7 +131,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger'ı oluştur
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
