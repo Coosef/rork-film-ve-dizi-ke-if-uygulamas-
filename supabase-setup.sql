@@ -60,57 +60,70 @@ ALTER TABLE public.preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.search_history ENABLE ROW LEVEL SECURITY;
 
 -- Profiles politikaları
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 CREATE POLICY "Users can view their own profile"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
 CREATE POLICY "Users can insert their own profile"
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
 -- Interactions politikaları
+DROP POLICY IF EXISTS "Users can view their own interactions" ON public.interactions;
 CREATE POLICY "Users can view their own interactions"
   ON public.interactions FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own interactions" ON public.interactions;
 CREATE POLICY "Users can insert their own interactions"
   ON public.interactions FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own interactions" ON public.interactions;
 CREATE POLICY "Users can update their own interactions"
   ON public.interactions FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own interactions" ON public.interactions;
 CREATE POLICY "Users can delete their own interactions"
   ON public.interactions FOR DELETE
   USING (auth.uid() = user_id);
 
 -- Preferences politikaları
+DROP POLICY IF EXISTS "Users can view their own preferences" ON public.preferences;
 CREATE POLICY "Users can view their own preferences"
   ON public.preferences FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own preferences" ON public.preferences;
 CREATE POLICY "Users can insert their own preferences"
   ON public.preferences FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own preferences" ON public.preferences;
 CREATE POLICY "Users can update their own preferences"
   ON public.preferences FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Search History politikaları
+DROP POLICY IF EXISTS "Users can view their own search history" ON public.search_history;
 CREATE POLICY "Users can view their own search history"
   ON public.search_history FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own search history" ON public.search_history;
 CREATE POLICY "Users can insert their own search history"
   ON public.search_history FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own search history" ON public.search_history;
 CREATE POLICY "Users can delete their own search history"
   ON public.search_history FOR DELETE
   USING (auth.uid() = user_id);
