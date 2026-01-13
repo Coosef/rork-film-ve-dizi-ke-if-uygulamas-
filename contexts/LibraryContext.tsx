@@ -15,50 +15,121 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  const mergeInteractions = (localItems: Interaction[], remoteItems: Interaction[]): Interaction[] => {
+    const merged = new Map<string, Interaction>();
+
+    localItems.forEach(item => {
+      const key = `${item.mediaId}-${item.mediaType}`;
+      merged.set(key, item);
+    });
+
+    remoteItems.forEach(item => {
+      const key = `${item.mediaId}-${item.mediaType}`;
+      const existing = merged.get(key);
+      
+      if (!existing) {
+        merged.set(key, item);
+      } else {
+        const existingDate = new Date(existing.updatedAt || existing.createdAt).getTime();
+        const remoteDate = new Date(item.updatedAt || item.createdAt).getTime();
+        
+        if (remoteDate > existingDate) {
+          merged.set(key, item);
+        }
+      }
+    });
+
+    return Array.from(merged.values());
+  };
+
+  const syncLocalWithSupabase = useCallback(async (): Promise<Interaction[]> => {
+    if (!isAuthenticated || !user) {
+      const stored = await AsyncStorage.getItem(LIBRARY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    }
+
+    try {
+      console.log('[LibraryContext] Starting sync for user:', user.email);
+      
+      const stored = await AsyncStorage.getItem(LIBRARY_KEY);
+      const localInteractions: Interaction[] = stored ? JSON.parse(stored) : [];
+      console.log('[LibraryContext] Local interactions:', localInteractions.length);
+
+      const { data, error } = await supabase
+        .from('interactions')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      const supabaseInteractions: Interaction[] = (data || []).map(item => ({
+        id: item.id,
+        mediaId: item.media_id,
+        mediaType: item.media_type as MediaType,
+        type: item.type as InteractionType,
+        rating: item.rating,
+        note: item.note,
+        watchProgress: item.watch_progress,
+        review: item.review,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+      }));
+      console.log('[LibraryContext] Remote interactions:', supabaseInteractions.length);
+
+      const mergedInteractions = mergeInteractions(localInteractions, supabaseInteractions);
+      console.log('[LibraryContext] Merged interactions:', mergedInteractions.length);
+
+      const localOnlyItems = localInteractions.filter(local => {
+        const key = `${local.mediaId}-${local.mediaType}`;
+        const remote = supabaseInteractions.find(r => `${r.mediaId}-${r.mediaType}` === key);
+        if (!remote) return true;
+        
+        const localDate = new Date(local.updatedAt || local.createdAt).getTime();
+        const remoteDate = new Date(remote.updatedAt || remote.createdAt).getTime();
+        return localDate > remoteDate;
+      });
+
+      if (localOnlyItems.length > 0) {
+        console.log('[LibraryContext] Syncing', localOnlyItems.length, 'local items to Supabase');
+        
+        const upsertPromises = localOnlyItems.map(item => 
+          supabase.from('interactions').upsert({
+            user_id: user.id,
+            media_id: item.mediaId,
+            media_type: item.mediaType,
+            type: item.type,
+            rating: item.rating,
+            note: item.note,
+            watch_progress: item.watchProgress,
+            review: item.review,
+            created_at: item.createdAt,
+            updated_at: item.updatedAt || new Date().toISOString(),
+          }, {
+            onConflict: 'user_id,media_id,media_type'
+          })
+        );
+        
+        await Promise.all(upsertPromises);
+        console.log('[LibraryContext] Successfully synced local items to Supabase');
+      }
+
+      await AsyncStorage.setItem(LIBRARY_KEY, JSON.stringify(mergedInteractions));
+      return mergedInteractions;
+    } catch (error) {
+      console.error('[LibraryContext] Sync failed:', error);
+      const stored = await AsyncStorage.getItem(LIBRARY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    }
+  }, [isAuthenticated, user]);
+
   const loadLibrary = useCallback(async () => {
     try {
       setIsLoading(true);
-      
-      if (isAuthenticated && user) {
-        console.log('[LibraryContext] Loading from Supabase for user:', user.email);
-        const { data, error } = await supabase
-          .from('interactions')
-          .select('*')
-          .eq('user_id', user.id);
-        
-        if (error) {
-          console.error('[LibraryContext] Supabase error:', error);
-          throw error;
-        }
-        
-        const supabaseInteractions: Interaction[] = (data || []).map(item => ({
-          id: item.id,
-          mediaId: item.media_id,
-          mediaType: item.media_type as MediaType,
-          type: item.type as InteractionType,
-          rating: item.rating,
-          note: item.note,
-          watchProgress: item.watch_progress,
-          review: item.review,
-          createdAt: item.created_at,
-          updatedAt: item.updated_at,
-        }));
-        
-        setInteractions(supabaseInteractions);
-        await AsyncStorage.setItem(LIBRARY_KEY, JSON.stringify(supabaseInteractions));
-        console.log('[LibraryContext] Loaded from Supabase:', supabaseInteractions.length, 'items');
-      } else {
-        console.log('[LibraryContext] User not authenticated, loading from local storage');
-        const stored = await AsyncStorage.getItem(LIBRARY_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          setInteractions(parsed);
-          console.log('[LibraryContext] Loaded from local:', parsed.length, 'items');
-        }
-      }
+      const synced = await syncLocalWithSupabase();
+      setInteractions(synced);
+      console.log('[LibraryContext] Library loaded:', synced.length, 'items');
     } catch (error) {
       console.error('[LibraryContext] Failed to load library:', error instanceof Error ? error.message : String(error));
-      console.error('[LibraryContext] Full error:', JSON.stringify(error, null, 2));
       try {
         const stored = await AsyncStorage.getItem(LIBRARY_KEY);
         if (stored) {
@@ -71,7 +142,7 @@ export const [LibraryProvider, useLibrary] = createContextHook(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, user]);
+  }, [syncLocalWithSupabase]);
 
   useEffect(() => {
     loadLibrary();
