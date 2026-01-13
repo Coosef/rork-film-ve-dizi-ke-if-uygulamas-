@@ -127,7 +127,7 @@ export default function LoginScreen() {
             <View style={styles.logoContainer}>
               <Film size={48} color={Colors.dark.primary} strokeWidth={2.5} />
             </View>
-            <Text style={styles.title}>Moviq</Text>
+            <Text style={styles.title}>Filmoji</Text>
             <Text style={styles.subtitle}>{t('auth.welcomeBack')}</Text>
           </View>
 
