@@ -110,16 +110,28 @@ export const [PreferencesProvider, usePreferences] = createContextHook(() => {
           haptics_enabled: prefs.hapticsEnabled,
           favorite_genres: prefs.favoriteGenres,
           has_completed_onboarding: prefs.hasCompletedOnboarding,
+          has_seen_backup_warning: prefs.hasSeenBackupWarning,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id'
         });
       
-      if (error) throw error;
+      if (error) {
+        console.error('[PreferencesContext] Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        throw error;
+      }
       console.log('[PreferencesContext] Synced to Supabase');
-    } catch (error) {
-      console.error('[PreferencesContext] Failed to sync to Supabase:', error);
-      console.error('[PreferencesContext] Full error:', JSON.stringify(error, null, 2));
+    } catch (error: any) {
+      console.error('[PreferencesContext] Failed to sync to Supabase:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+      });
     }
   }, [isAuthenticated, user]);
 

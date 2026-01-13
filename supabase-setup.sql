@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS public.preferences (
   haptics_enabled BOOLEAN DEFAULT true,
   favorite_genres INTEGER[],
   has_completed_onboarding BOOLEAN DEFAULT false,
+  has_seen_backup_warning BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -133,7 +134,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $BODY$
+AS $
 BEGIN
   INSERT INTO public.profiles (id, email, full_name)
   VALUES (
@@ -147,7 +148,7 @@ BEGIN
   
   RETURN NEW;
 END;
-$BODY$;
+$;
 
 -- Trigger'ı oluştur
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

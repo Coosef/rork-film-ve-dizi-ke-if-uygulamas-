@@ -47,8 +47,7 @@ export default function LoginScreen() {
 
     try {
       await signInWithEmail(email, password);
-      console.log('[Login] Login successful, redirecting...');
-      router.replace('/(tabs)/(home)' as Href);
+      console.log('[Login] Login successful');
     } catch (err: any) {
       console.error('[Login] Error:', err);
       let errorMessage = err.message || t('auth.loginError');
@@ -73,8 +72,7 @@ export default function LoginScreen() {
 
     try {
       await signInWithGoogle();
-      console.log('[Login] Google login successful, redirecting...');
-      router.replace('/(tabs)/(home)' as Href);
+      console.log('[Login] Google login successful');
     } catch (err: any) {
       console.error('[Login] Google error:', err);
       setError(err.message || t('auth.loginError'));
@@ -89,8 +87,7 @@ export default function LoginScreen() {
 
     try {
       await signInWithApple();
-      console.log('[Login] Apple login successful, redirecting...');
-      router.replace('/(tabs)/(home)' as Href);
+      console.log('[Login] Apple login successful');
     } catch (err: any) {
       console.error('[Login] Apple error:', err);
       setError(err.message || t('auth.loginError'));
