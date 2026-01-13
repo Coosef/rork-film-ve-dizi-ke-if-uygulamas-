@@ -463,13 +463,13 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingBottom: 0,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center' as const,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   headerTitle: {
     color: Colors.dark.text,
@@ -518,11 +518,11 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     minHeight: 50,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   tabsContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 4,
     gap: 12,
     alignItems: 'center' as const,
   },
