@@ -142,15 +142,21 @@ BEGIN
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', '')
-  );
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    updated_at = NOW();
   
   INSERT INTO public.preferences (user_id, ui_language)
-  VALUES (NEW.id, 'tr');
+  VALUES (NEW.id, 'tr')
+  ON CONFLICT (user_id) DO NOTHING;
   
   RETURN NEW;
 EXCEPTION
+  WHEN unique_violation THEN
+    RETURN NEW;
   WHEN others THEN
-    RAISE LOG 'Error in handle_new_user: %', SQLERRM;
+    RAISE WARNING 'Error in handle_new_user for user %: %', NEW.id, SQLERRM;
     RETURN NEW;
 END;
 $func$;
