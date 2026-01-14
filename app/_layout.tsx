@@ -12,6 +12,7 @@ import { SearchHistoryProvider } from "@/contexts/SearchHistoryContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { PurchasesProvider } from "@/contexts/PurchasesContext";
 import Colors from "@/constants/colors";
 import { trpc, trpcClient } from "@/lib/trpc";
 
@@ -224,21 +225,23 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <AuthProvider>
-          <PreferencesProvider>
-            <LanguageProvider>
-              <LibraryProvider>
-                <SearchHistoryProvider>
-                  <NotificationProvider>
-                    <GestureHandlerRootView style={{ flex: 1 }}>
-                      <RootLayoutNav />
-                    </GestureHandlerRootView>
-                  </NotificationProvider>
-                </SearchHistoryProvider>
-              </LibraryProvider>
-            </LanguageProvider>
-          </PreferencesProvider>
-        </AuthProvider>
+        <PurchasesProvider>
+          <AuthProvider>
+            <PreferencesProvider>
+              <LanguageProvider>
+                <LibraryProvider>
+                  <SearchHistoryProvider>
+                    <NotificationProvider>
+                      <GestureHandlerRootView style={{ flex: 1 }}>
+                        <RootLayoutNav />
+                      </GestureHandlerRootView>
+                    </NotificationProvider>
+                  </SearchHistoryProvider>
+                </LibraryProvider>
+              </LanguageProvider>
+            </PreferencesProvider>
+          </AuthProvider>
+        </PurchasesProvider>
       </trpc.Provider>
     </QueryClientProvider>
   );
