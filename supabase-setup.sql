@@ -134,7 +134,8 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $
+SET search_path = public
+AS $func$
 BEGIN
   INSERT INTO public.profiles (id, email, full_name)
   VALUES (
@@ -147,8 +148,12 @@ BEGIN
   VALUES (NEW.id, 'tr');
   
   RETURN NEW;
+EXCEPTION
+  WHEN others THEN
+    RAISE LOG 'Error in handle_new_user: %', SQLERRM;
+    RETURN NEW;
 END;
-$;
+$func$;
 
 -- Trigger'ı oluştur
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
