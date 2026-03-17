@@ -1,11 +1,11 @@
 import { BlurView } from 'expo-blur';
 import React from 'react';
-import { StyleSheet, View, ViewStyle, Platform } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle, Platform } from 'react-native';
 import Colors from '@/constants/colors';
 
 interface GlassPanelProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   intensity?: number;
 }
 
