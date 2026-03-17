@@ -260,9 +260,9 @@ export default function HomeScreen() {
     router.push(`/movie/${show.id}` as any);
   };
 
-  const handleAddToWatchlist = () => {
+  const handleAddToWatchlist = async () => {
     if (currentHero) {
-      addInteraction(currentHero.id, 'tv', 'watchlist');
+      await addInteraction(currentHero.id, 'tv', 'watchlist');
       console.log('[Home] Added to watchlist:', currentHero.name);
     }
   };
@@ -280,6 +280,7 @@ export default function HomeScreen() {
       popularQuery.refetch(),
       topRatedQuery.refetch(),
       newReleasesQuery.refetch(),
+      recommendedQuery.refetch(),
     ]);
     setRefreshing(false);
   };
@@ -287,10 +288,25 @@ export default function HomeScreen() {
   const isSearching = searchQuery.length > 2;
   const searchResults = searchQuery_data.data || [];
 
-  if (trendingQuery.isLoading || preferencesLoading) {
+  const isLoading = trendingQuery.isLoading || popularQuery.isLoading || topRatedQuery.isLoading || preferencesLoading;
+  const hasError = trendingQuery.error || popularQuery.error || topRatedQuery.error;
+  
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.loadingText}>{t('common.loading')}</Text>
+      </View>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorTitle}>Bir hata oluştu</Text>
+        <Text style={styles.errorText}>İçerik yüklenirken bir sorun oluştu. Lütfen tekrar deneyin.</Text>
+        <Pressable style={styles.retryButton} onPress={() => void handleRefresh()}>
+          <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+        </Pressable>
       </View>
     );
   }
@@ -453,6 +469,15 @@ export default function HomeScreen() {
         )}
 
         <View style={styles.shelvesContainer}>
+          {trendingQuery.data?.length === 0 && popularQuery.data?.length === 0 && (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyTitle}>İçerik yüklenemedi</Text>
+              <Text style={styles.emptyDescription}>Şu anda içerik gösterilemiyor. İnternet bağlantınızı kontrol edin ve tekrar deneyin.</Text>
+              <Pressable style={styles.retryButton} onPress={() => void handleRefresh()}>
+                <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+              </Pressable>
+            </View>
+          )}
           {recommendedShows.length > 0 && (
             <View>
               <View style={styles.shelfHeader}>
@@ -490,21 +515,27 @@ export default function HomeScreen() {
               onMoviePress={handleShowPress}
             />
           )}
-          <MovieShelf
-            title={t('home.trending')}
-            movies={(trendingQuery.data || []).map(convertShowToMediaItem)}
-            onMoviePress={handleShowPress}
-          />
-          <MovieShelf
-            title={t('home.popular')}
-            movies={(popularQuery.data || []).map(convertShowToMediaItem)}
-            onMoviePress={handleShowPress}
-          />
-          <MovieShelf
-            title={t('home.topRated')}
-            movies={(topRatedQuery.data || []).map(convertShowToMediaItem)}
-            onMoviePress={handleShowPress}
-          />
+          {trendingQuery.data && trendingQuery.data.length > 0 && (
+            <MovieShelf
+              title={t('home.trending')}
+              movies={trendingQuery.data.map(convertShowToMediaItem)}
+              onMoviePress={handleShowPress}
+            />
+          )}
+          {popularQuery.data && popularQuery.data.length > 0 && (
+            <MovieShelf
+              title={t('home.popular')}
+              movies={popularQuery.data.map(convertShowToMediaItem)}
+              onMoviePress={handleShowPress}
+            />
+          )}
+          {topRatedQuery.data && topRatedQuery.data.length > 0 && (
+            <MovieShelf
+              title={t('home.topRated')}
+              movies={topRatedQuery.data.map(convertShowToMediaItem)}
+              onMoviePress={handleShowPress}
+            />
+          )}
         </View>
           </>
         )}
@@ -683,6 +714,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center' as const,
     marginTop: 32,
+  },
+  errorTitle: {
+    color: Colors.dark.text,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginBottom: 8,
+  },
+  errorText: {
+    color: Colors.dark.textSecondary,
+    fontSize: 14,
+    textAlign: 'center' as const,
+    marginBottom: 24,
+    paddingHorizontal: 32,
+  },
+  retryButton: {
+    backgroundColor: Colors.dark.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: Colors.dark.text,
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    color: Colors.dark.text,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    marginBottom: 8,
+    textAlign: 'center' as const,
+  },
+  emptyDescription: {
+    color: Colors.dark.textSecondary,
+    fontSize: 14,
+    textAlign: 'center' as const,
+    marginBottom: 24,
+    lineHeight: 20,
   },
   continueWatchingSection: {
     marginBottom: 24,
