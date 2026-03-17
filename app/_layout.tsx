@@ -70,31 +70,26 @@ function RootLayoutNav() {
   }, [preferencesContext]);
 
   useEffect(() => {
-    if (!appReady || !preferencesContext || !authContext || hasNavigated || authContext.isLoading) {
+    if (!appReady || !preferencesContext || hasNavigated) {
       return;
     }
 
     const inOnboarding = segments[0] === 'onboarding';
     const inAuth = segments[0] === 'auth';
     const hasCompletedOnboarding = preferencesContext.preferences?.hasCompletedOnboarding;
-    const isAuthenticated = authContext.isAuthenticated;
 
-    console.log('[RootLayout] Navigation check:', { hasCompletedOnboarding, isAuthenticated, inOnboarding, inAuth, segments });
+    console.log('[RootLayout] Navigation check:', { hasCompletedOnboarding, inOnboarding, inAuth, segments });
 
-    if (!isAuthenticated && !inAuth) {
-      console.log('[RootLayout] Redirecting to auth/login');
-      setHasNavigated(true);
-      router.replace('/auth/login' as Href);
-    } else if (isAuthenticated && !hasCompletedOnboarding && !inOnboarding) {
+    if (!hasCompletedOnboarding && !inOnboarding && !inAuth) {
       console.log('[RootLayout] Redirecting to onboarding');
       setHasNavigated(true);
       router.replace('/onboarding' as Href);
-    } else if (isAuthenticated && hasCompletedOnboarding && (inOnboarding || inAuth)) {
+    } else if (hasCompletedOnboarding && (inOnboarding || inAuth)) {
       console.log('[RootLayout] Redirecting to home');
       setHasNavigated(true);
       router.replace('/(tabs)/(home)' as Href);
     }
-  }, [preferencesContext, authContext, appReady, segments, router, hasNavigated]);
+  }, [preferencesContext, appReady, segments, router, hasNavigated]);
 
   useEffect(() => {
     if (!appReady || !preferencesContext || !authContext || authContext.isLoading) {

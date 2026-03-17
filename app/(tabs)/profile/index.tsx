@@ -1,4 +1,4 @@
-import { Film, Heart, Clock, TrendingUp, Settings, User, Bell, Shield, Moon, Globe, Volume2, Vibrate, ChevronRight, BarChart3, Award, Target, Flame, Zap, Star, Tv, Camera, Edit3, Share2, Users, MessageCircle, Trophy, Gift, CloudUpload, AlertTriangle } from 'lucide-react-native';
+import { Film, Heart, Clock, TrendingUp, Settings, User, Bell, Shield, Moon, Globe, Volume2, Vibrate, ChevronRight, BarChart3, Award, Target, Flame, Zap, Star, Tv, Camera, Edit3, Share2, Users, MessageCircle, Trophy, Gift, CloudUpload, AlertTriangle, Lock, LogIn } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack, Href } from 'expo-router';
@@ -115,7 +115,7 @@ export default function ProfileScreen() {
   ];
 
   const totalShows = stats.totalWatched + stats.totalWatchlist + stats.totalFavorites;
-  const watchedPercentage = totalShows > 0 ? (stats.totalWatched / totalShows * 100).toFixed(0) : 0;
+  const watchedPercentage = totalShows > 0 ? (stats.totalWatched / totalShows * 100).toFixed(0) : '0';
 
   const handleShare = async () => {
     try {
@@ -219,7 +219,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <View style={styles.progressBarContainer}>
-                <View style={[styles.progressBar, { width: `${watchedPercentage}%` }]} />
+                <View style={[styles.progressBar, { width: `${watchedPercentage}%` as `${number}%` }]} />
               </View>
               <Text style={styles.progressText}>
                 {stats.totalWatched} / {totalShows} {t('profile.shows')}
@@ -504,42 +504,64 @@ export default function ProfileScreen() {
           </GlassPanel>
         </View>
 
-        <View style={styles.section}>
-          <GlassPanel style={styles.logoutCard}>
-            <Pressable 
-              style={styles.logoutButton}
-              onPress={async () => {
-                Alert.alert(
-                  t('profile.logout'),
-                  'Are you sure you want to logout?',
-                  [
-                    {
-                      text: t('common.cancel'),
-                      style: 'cancel',
-                    },
-                    {
-                      text: t('profile.logout'),
-                      style: 'destructive',
-                      onPress: async () => {
-                        try {
-                          await signOut();
-                        } catch (error) {
-                          console.error('[Profile] Logout error:', error);
-                          Alert.alert(t('common.error'), 'Failed to logout');
-                        }
+        {!user ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('profile.account')}</Text>
+            </View>
+            <GlassPanel style={styles.loginPromptCard}>
+              <View style={styles.loginPromptIcon}>
+                <Lock size={32} color={Colors.dark.primary} />
+              </View>
+              <Text style={styles.loginPromptTitle}>{t('profile.syncDataTitle')}</Text>
+              <Text style={styles.loginPromptText}>{t('profile.syncDataDescription')}</Text>
+              <Pressable 
+                style={styles.loginButton}
+                onPress={() => router.push('/auth/login' as Href)}
+              >
+                <LogIn size={20} color={Colors.dark.text} />
+                <Text style={styles.loginButtonText}>{t('profile.loginToSync')}</Text>
+              </Pressable>
+            </GlassPanel>
+          </View>
+        ) : (
+          <View style={styles.section}>
+            <GlassPanel style={styles.logoutCard}>
+              <Pressable 
+                style={styles.logoutButton}
+                onPress={async () => {
+                  Alert.alert(
+                    t('profile.logout'),
+                    'Are you sure you want to logout?',
+                    [
+                      {
+                        text: t('common.cancel'),
+                        style: 'cancel',
                       },
-                    },
-                  ]
-                );
-              }}
-            >
-              <Text style={styles.logoutText}>{t('profile.logout')}</Text>
-            </Pressable>
-            {user?.email && (
-              <Text style={styles.userEmail}>{user.email}</Text>
-            )}
-          </GlassPanel>
-        </View>
+                      {
+                        text: t('profile.logout'),
+                        style: 'destructive',
+                        onPress: async () => {
+                          try {
+                            await signOut();
+                          } catch (error) {
+                            console.error('[Profile] Logout error:', error);
+                            Alert.alert(t('common.error'), 'Failed to logout');
+                          }
+                        },
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.logoutText}>{t('profile.logout')}</Text>
+              </Pressable>
+              {user?.email && (
+                <Text style={styles.userEmail}>{user.email}</Text>
+              )}
+            </GlassPanel>
+          </View>
+        )}
       </ScrollView>
 
       <Modal
@@ -1842,5 +1864,45 @@ const styles = StyleSheet.create({
   backupReminderText: {
     color: Colors.dark.textSecondary,
     fontSize: 13,
+  },
+  loginPromptCard: {
+    padding: 24,
+    alignItems: 'center' as const,
+    gap: 12,
+  },
+  loginPromptIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: `${Colors.dark.primary}20`,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    marginBottom: 8,
+  },
+  loginPromptTitle: {
+    color: Colors.dark.text,
+    fontSize: 18,
+    fontWeight: '700' as const,
+  },
+  loginPromptText: {
+    color: Colors.dark.textSecondary,
+    fontSize: 14,
+    textAlign: 'center' as const,
+    lineHeight: 20,
+  },
+  loginButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    backgroundColor: Colors.dark.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  loginButtonText: {
+    color: Colors.dark.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
 });

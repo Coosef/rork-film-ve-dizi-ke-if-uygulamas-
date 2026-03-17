@@ -247,6 +247,9 @@ export default {
     changePasswordDesc: 'Hesap şifrenizi değiştirmek için bu seçeneği kullanın',
     deleteAccount: 'Hesabı Sil',
     deleteAccountDesc: 'Hesabınızı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+    syncDataTitle: 'Verilerinizi Yedekleyin',
+    syncDataDescription: 'Verilerinizin yedeklenmesi ve cihaz değişiminde kaybolmaması için oturum açmanız gerekmektedir.',
+    loginToSync: 'Oturum Aç',
   },
   movieDetails: {
     overview: 'Özet',
