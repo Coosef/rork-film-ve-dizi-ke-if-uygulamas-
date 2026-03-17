@@ -1,6 +1,6 @@
 import { Movie, MovieDetails, MovieListResponse, TVShow, MediaItem, MediaType } from '@/types/tmdb';
 
-const TMDB_API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY || '';
+const TMDB_API_KEY = 'PSa0a4eWoGn1AHSVePs_HDt4ppk-znUD';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 

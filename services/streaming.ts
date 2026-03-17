@@ -22,7 +22,7 @@ const PROVIDER_INFO: Record<number, { name: string; logo: string; deepLinkPrefix
 
 export const getStreamingProviders = async (tmdbId: number, mediaType: 'movie' | 'tv'): Promise<StreamingProvider[]> => {
   try {
-    const TMDB_API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY || '';
+    const TMDB_API_KEY = 'PSa0a4eWoGn1AHSVePs_HDt4ppk-znUD';
     const url = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/watch/providers?api_key=${TMDB_API_KEY}`;
     
     const response = await fetch(url);
