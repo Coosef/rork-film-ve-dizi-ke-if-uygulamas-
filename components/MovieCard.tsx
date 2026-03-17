@@ -4,7 +4,7 @@ import { Star, Bookmark, BookmarkCheck } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, View, Pressable, Dimensions } from 'react-native';
 import Colors from '@/constants/colors';
-import { MediaItem } from '@/types/tvmaze';
+import { MediaItem } from '@/types/tmdb';
 import { useLibrary } from '@/contexts/LibraryContext';
 
 interface MovieCardProps {
@@ -26,14 +26,14 @@ export default function MovieCard({
   showWatchlistButton = true
 }: MovieCardProps) {
   const { isInWatchlist, addInteraction } = useLibrary();
-  const inWatchlist = isInWatchlist(movie.id, 'tv');
+  const inWatchlist = isInWatchlist(movie.id, movie.type || 'movie');
 
   const handleToggleWatchlist = (e: any) => {
     e.stopPropagation();
     if (inWatchlist) {
-      addInteraction(movie.id, 'tv', 'watched');
+      void addInteraction(movie.id, movie.type || 'movie', 'watched');
     } else {
-      addInteraction(movie.id, 'tv', 'watchlist');
+      void addInteraction(movie.id, movie.type || 'movie', 'watchlist');
     }
   };
   const imageUrl = movie.posterPath || 'https://via.placeholder.com/500x750?text=No+Image';

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ScrollView, Pressable } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import MovieCard from './MovieCard';
-import { MediaItem } from '@/types/tvmaze';
+import { MediaItem } from '@/types/tmdb';
 
 interface MovieShelfProps {
   title: string;

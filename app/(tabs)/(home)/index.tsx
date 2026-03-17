@@ -25,15 +25,13 @@ import {
   getTrending,
   getPopular,
   getTopRated,
-  getImageUrl,
-  convertShowToMediaItem,
-  searchShows,
-  getNewReleases,
-  GENRES,
-  getShowDetails,
-} from '@/services/tvmaze';
-import { MediaItem } from '@/types/tvmaze';
-import { getAIRecommendations } from '@/services/ai-recommendations';
+  convertMovieToMediaItem,
+  searchMovies,
+  getUpcoming,
+  getMovieDetails,
+} from '@/services/tmdb';
+import { MediaItem, Movie } from '@/types/tmdb';
+// import { getAIRecommendations } from '@/services/ai-recommendations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -68,20 +66,20 @@ export default function HomeScreen() {
 
   const newReleasesQuery = useQuery({
     queryKey: ['newReleases'],
-    queryFn: () => getNewReleases(),
+    queryFn: () => getUpcoming(),
     staleTime: 1000 * 60 * 60 * 1,
     gcTime: 1000 * 60 * 60 * 6,
   });
 
   const searchQuery_data = useQuery({
     queryKey: ['search', searchQuery],
-    queryFn: () => searchShows(searchQuery),
+    queryFn: () => searchMovies(searchQuery),
     enabled: searchQuery.length > 2,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 15,
   });
 
-  const heroShows = trendingQuery.data?.slice(0, 5) || [];
+  const heroShows = (trendingQuery.data?.results || []).slice(0, 5);
   const currentHero = heroShows[0];
 
   const watchingInteractions = useMemo(() => {
@@ -93,26 +91,21 @@ export default function HomeScreen() {
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 30,
     queryFn: async () => {
-      console.log('[ContinueWatching] Fetching shows for', watchingInteractions.length, 'interactions');
-      const shows = await Promise.all(
+      console.log('[ContinueWatching] Fetching movies for', watchingInteractions.length, 'interactions');
+      const movies = await Promise.all(
         watchingInteractions.map(async (interaction) => {
           try {
-            const response = await fetch(`https://api.tvmaze.com/shows/${interaction.mediaId}`);
-            if (!response.ok) {
-              console.error('[ContinueWatching] Failed to fetch show', interaction.mediaId, response.status);
-              return null;
-            }
-            const show = await response.json();
-            console.log('[ContinueWatching] Fetched show:', show.name, 'Image:', show.image?.original || show.image?.medium);
-            return { show, interaction };
+            const movie = await getMovieDetails(interaction.mediaId);
+            console.log('[ContinueWatching] Fetched movie:', movie.title, 'Image:', movie.poster_path);
+            return { movie, interaction };
           } catch (error) {
-            console.error('[ContinueWatching] Error fetching show:', error);
+            console.error('[ContinueWatching] Error fetching movie:', error);
             return null;
           }
         })
       );
-      const filtered = shows.filter(Boolean);
-      console.log('[ContinueWatching] Total shows fetched:', filtered.length);
+      const filtered = movies.filter(Boolean);
+      console.log('[ContinueWatching] Total movies fetched:', filtered.length);
       return filtered.sort((a, b) => {
         const dateA = new Date(a!.interaction.watchProgress?.lastWatchedAt || 0).getTime();
         const dateB = new Date(b!.interaction.watchProgress?.lastWatchedAt || 0).getTime();
@@ -122,9 +115,9 @@ export default function HomeScreen() {
     enabled: watchingInteractions.length > 0,
   });
 
-  const continueWatchingShows = continueWatchingQuery.data || [];
+  const continueWatchingMovies = continueWatchingQuery.data || [];
 
-  const [useAIRecommendations, setUseAIRecommendations] = useState(true);
+  const [useAIRecommendations] = useState(true);
 
   const recommendedQuery = useQuery({
     queryKey: ['recommended', interactions.map(i => i.mediaId).join(','), preferences.favoriteGenres?.join(',') || '', useAIRecommendations],
@@ -133,137 +126,87 @@ export default function HomeScreen() {
     queryFn: async () => {
       const favoriteInteractions = getInteractionsByType('favorite');
       const watchedInteractions = getInteractionsByType('watched');
-      const watchingInteractions = getInteractionsByType('watching');
-      const allInteractions = [...favoriteInteractions, ...watchedInteractions, ...watchingInteractions];
-      
-      if (useAIRecommendations && allInteractions.length >= 3) {
-        console.log('[Recommended] Using AI recommendations');
-        try {
-          const [popularShows, topRatedShows, trendingShows] = await Promise.all([
-            getPopular(),
-            getTopRated(),
-            getTrending(),
-          ]);
-          
-          const allShows = [...popularShows, ...topRatedShows, ...trendingShows];
-          const uniqueShows = Array.from(new Map(allShows.map(show => [show.id, show])).values());
-          
-          const recentlyWatchedShows = await Promise.all(
-            allInteractions.slice(0, 5).map(i => getShowDetails(i.mediaId).catch(() => null))
-          );
-          const validRecentShows = recentlyWatchedShows.filter(Boolean);
-          
-          const aiRecommendations = await getAIRecommendations({
-            userInteractions: allInteractions,
-            availableShows: uniqueShows,
-            favoriteGenres: preferences.favoriteGenres,
-            recentlyWatched: validRecentShows as any[],
-          });
-          
-          const recommendedShows = aiRecommendations
-            .map(rec => {
-              const show = uniqueShows.find(s => s.id === rec.showId);
-              if (!show) return null;
-              return {
-                ...show,
-                recommendationScore: rec.score,
-                aiReason: rec.reason,
-                matchedPreferences: rec.matchedPreferences,
-              };
-            })
-            .filter(Boolean)
-            .slice(0, 20);
-          
-          console.log('[Recommended] AI generated', recommendedShows.length, 'recommendations');
-          return recommendedShows;
-        } catch (error) {
-          console.error('[Recommended] AI error, falling back to genre-based:', error);
-        }
-      }
+      const watchingInteractionsList = getInteractionsByType('watching');
+      const allInteractions = [...favoriteInteractions, ...watchedInteractions, ...watchingInteractionsList];
       
       console.log('[Recommended] Using genre-based recommendations');
-      const genreCounts: Record<string, number> = {};
+      const genreCounts: Record<number, number> = {};
       
       if (preferences.favoriteGenres && preferences.favoriteGenres.length > 0) {
         console.log('[Recommended] Using onboarding genres:', preferences.favoriteGenres);
-        preferences.favoriteGenres.forEach((genreIndex: number) => {
-          const genre = GENRES[genreIndex];
-          if (genre) {
-            genreCounts[genre] = (genreCounts[genre] || 0) + 5;
-          }
+        preferences.favoriteGenres.forEach((genreId: number) => {
+          genreCounts[genreId] = (genreCounts[genreId] || 0) + 5;
         });
       }
       
       for (const interaction of allInteractions.slice(0, 15)) {
         try {
-          const response = await fetch(`https://api.tvmaze.com/shows/${interaction.mediaId}`);
-          if (!response.ok) continue;
-          const show = await response.json();
+          const movie = await getMovieDetails(interaction.mediaId);
           
-          show.genres?.forEach((genre: string) => {
+          movie.genres?.forEach((genre) => {
             const weight = interaction.type === 'favorite' ? 3 : interaction.type === 'watching' ? 2 : 1;
-            genreCounts[genre] = (genreCounts[genre] || 0) + weight;
+            genreCounts[genre.id] = (genreCounts[genre.id] || 0) + weight;
           });
         } catch (error) {
-          console.error('[Recommended] Error fetching show:', error);
+          console.error('[Recommended] Error fetching movie:', error);
         }
       }
 
-      const topGenres = Object.entries(genreCounts)
+      const topGenreIds = Object.entries(genreCounts)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
-        .map(([genre]) => genre);
+        .map(([genreId]) => parseInt(genreId));
 
-      if (topGenres.length === 0) {
+      if (topGenreIds.length === 0) {
         return [];
       }
 
-      console.log('[Recommended] Top genres:', topGenres);
+      console.log('[Recommended] Top genre IDs:', topGenreIds);
 
-      const [popularShows, topRatedShows, trendingShows] = await Promise.all([
+      const [popularMovies, topRatedMovies, trendingMovies] = await Promise.all([
         getPopular(),
         getTopRated(),
         getTrending(),
       ]);
       
-      const allShows = [...popularShows, ...topRatedShows, ...trendingShows];
-      const uniqueShows = Array.from(new Map(allShows.map(show => [show.id, show])).values());
+      const allMovies = [...popularMovies.results, ...topRatedMovies.results, ...trendingMovies.results];
+      const uniqueMovies = Array.from(new Map(allMovies.map(movie => [movie.id, movie])).values());
       const watchedIds = new Set(interactions.map(i => i.mediaId));
       
-      const recommended = uniqueShows
-        .filter(show => !watchedIds.has(show.id))
-        .filter(show => show.genres.some(genre => topGenres.includes(genre)))
-        .map(show => {
-          const genreMatchCount = show.genres.filter(g => topGenres.includes(g)).length;
+      const recommended = uniqueMovies
+        .filter(movie => !watchedIds.has(movie.id))
+        .filter(movie => movie.genre_ids.some(genreId => topGenreIds.includes(genreId)))
+        .map(movie => {
+          const genreMatchCount = movie.genre_ids.filter(g => topGenreIds.includes(g)).length;
           const genreScore = genreMatchCount * 10;
-          const ratingScore = show.rating.average || 0;
-          const popularityScore = Math.min(show.weight / 100, 10);
+          const ratingScore = movie.vote_average || 0;
+          const popularityScore = Math.min(movie.popularity / 100, 10);
           
           return {
-            ...show,
+            ...movie,
             recommendationScore: genreScore + ratingScore + popularityScore,
           };
         })
         .sort((a, b) => b.recommendationScore - a.recommendationScore)
         .slice(0, 20);
 
-      console.log('[Recommended] Generated', recommended.length, 'recommendations based on', topGenres.join(', '));
+      console.log('[Recommended] Generated', recommended.length, 'recommendations');
       return recommended;
     },
     enabled: true,
   });
 
-  const recommendedShows = recommendedQuery.data || [];
+  const recommendedMovies = recommendedQuery.data || [];
 
-  const handleShowPress = (show: MediaItem) => {
-    console.log('[Home] Show pressed:', show.title);
-    router.push(`/movie/${show.id}` as any);
+  const handleShowPress = (movie: MediaItem) => {
+    console.log('[Home] Movie pressed:', movie.title);
+    router.push(`/movie/${movie.id}` as any);
   };
 
   const handleAddToWatchlist = async () => {
     if (currentHero) {
-      await addInteraction(currentHero.id, 'tv', 'watchlist');
-      console.log('[Home] Added to watchlist:', currentHero.name);
+      await addInteraction(currentHero.id, 'movie', 'watchlist');
+      console.log('[Home] Added to watchlist:', currentHero.title);
     }
   };
 
@@ -285,8 +228,13 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
+  const getMovieImageUrl = (path: string | null, size: 'w200' | 'w500' | 'w780' | 'original' = 'w500') => {
+    if (!path) return 'https://via.placeholder.com/500x750?text=No+Image';
+    return `https://image.tmdb.org/t/p/${size}${path}`;
+  };
+
   const isSearching = searchQuery.length > 2;
-  const searchResults = searchQuery_data.data || [];
+  const searchResults = searchQuery_data.data?.results || [];
 
   const isLoading = trendingQuery.isLoading || popularQuery.isLoading || topRatedQuery.isLoading || preferencesLoading;
   const hasError = trendingQuery.error || popularQuery.error || topRatedQuery.error;
@@ -347,7 +295,7 @@ export default function HomeScreen() {
             ) : (
               <MovieShelf
                 title=""
-                movies={searchResults.map(convertShowToMediaItem)}
+                movies={searchResults.map((movie) => convertMovieToMediaItem(movie))}
                 onMoviePress={handleShowPress}
               />
             )}
@@ -357,7 +305,7 @@ export default function HomeScreen() {
         {currentHero && (
           <View style={styles.heroContainer}>
             <Image
-              source={{ uri: getImageUrl(currentHero, 'original') }}
+              source={{ uri: getMovieImageUrl(currentHero.backdrop_path, 'original') }}
               style={styles.heroImage}
               contentFit="cover"
             />
@@ -367,9 +315,9 @@ export default function HomeScreen() {
             />
             <View style={styles.heroContent}>
               <View style={styles.heroInfo}>
-                <Text style={styles.heroTitle}>{currentHero.name}</Text>
+                <Text style={styles.heroTitle}>{currentHero.title}</Text>
                 <Text style={styles.heroOverview} numberOfLines={3}>
-                  {currentHero.summary ? currentHero.summary.replace(/<[^>]*>/g, '') : ''}
+                  {currentHero.overview || ''}
                 </Text>
                 <View style={styles.heroActions}>
                   <Pressable style={styles.playButton} onPress={handlePlayTrailer}>
@@ -381,7 +329,7 @@ export default function HomeScreen() {
                   </Pressable>
                   <Pressable 
                     style={styles.iconButton}
-                    onPress={() => handleShowPress(convertShowToMediaItem(currentHero))}
+                    onPress={() => handleShowPress(convertMovieToMediaItem(currentHero))}
                   >
                     <Info size={24} color={Colors.dark.text} />
                   </Pressable>
@@ -391,7 +339,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {continueWatchingShows.length > 0 && (
+        {continueWatchingMovies.length > 0 && (
           <View style={styles.continueWatchingSection}>
             <Text style={styles.continueWatchingTitle}>{t('home.continueWatching')}</Text>
             <ScrollView
@@ -399,23 +347,23 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.continueWatchingScroll}
             >
-              {continueWatchingShows.map((item: any) => {
-                const { show, interaction } = item;
+              {continueWatchingMovies.map((item: any) => {
+                const { movie, interaction } = item;
                 const progress = interaction.watchProgress;
                 const progressPercentage = progress
                   ? (progress.watchedEpisodes / progress.totalEpisodes) * 100
                   : 0;
 
-                const imageUrl = show.image?.original || show.image?.medium;
-                console.log('[ContinueWatching] Rendering card for:', show.name, 'Image URL:', imageUrl);
+                const imageUrl = getMovieImageUrl(movie.poster_path, 'w500');
+                console.log('[ContinueWatching] Rendering card for:', movie.title, 'Image URL:', imageUrl);
 
                 return (
                   <Pressable
-                    key={show.id}
+                    key={movie.id}
                     style={styles.continueWatchingCard}
-                    onPress={() => router.push(`/movie/${show.id}` as any)}
+                    onPress={() => router.push(`/movie/${movie.id}` as any)}
                   >
-                    {imageUrl ? (
+                    {movie.poster_path ? (
                       <Image
                         source={{ uri: imageUrl }}
                         style={styles.continueWatchingImage}
@@ -434,7 +382,7 @@ export default function HomeScreen() {
                         <Text style={styles.continueWatchingBadgeText}>{t('home.continue')}</Text>
                       </View>
                       <Text style={styles.continueWatchingShowTitle} numberOfLines={2}>
-                        {show.name}
+                        {movie.title}
                       </Text>
                       <View style={styles.continueWatchingProgress}>
                         <View style={styles.continueWatchingProgressBar}>
@@ -451,7 +399,7 @@ export default function HomeScreen() {
                       </View>
                       <Pressable
                         style={styles.continueWatchingButton}
-                        onPress={() => router.push(`/movie/${show.id}` as any)}
+                        onPress={() => router.push(`/movie/${movie.id}` as any)}
                       >
                         <Play
                           size={16}
@@ -469,7 +417,7 @@ export default function HomeScreen() {
         )}
 
         <View style={styles.shelvesContainer}>
-          {trendingQuery.data?.length === 0 && popularQuery.data?.length === 0 && (
+          {(!trendingQuery.data?.results?.length && !popularQuery.data?.results?.length) && (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyTitle}>İçerik yüklenemedi</Text>
               <Text style={styles.emptyDescription}>Şu anda içerik gösterilemiyor. İnternet bağlantınızı kontrol edin ve tekrar deneyin.</Text>
@@ -478,61 +426,46 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           )}
-          {recommendedShows.length > 0 && (
+          {recommendedMovies.length > 0 && (
             <View>
               <View style={styles.shelfHeader}>
                 <View style={styles.shelfTitleContainer}>
                   <Sparkles size={20} color={Colors.dark.primary} />
                   <Text style={styles.shelfTitle}>{t('home.forYou')}</Text>
-                  {useAIRecommendations && interactions.length >= 3 && (
-                    <View style={styles.aiPoweredBadge}>
-                      <Text style={styles.aiPoweredText}>{t('home.aiPowered')}</Text>
-                    </View>
-                  )}
                 </View>
-                {interactions.length >= 3 && (
-                  <Pressable 
-                    style={styles.toggleAIButton}
-                    onPress={() => setUseAIRecommendations(!useAIRecommendations)}
-                  >
-                    <Text style={styles.toggleAIText}>
-                      {useAIRecommendations ? t('home.classic') : t('home.aiPowered')}
-                    </Text>
-                  </Pressable>
-                )}
               </View>
               <MovieShelf
                 title=""
-                movies={recommendedShows.filter(Boolean).map((show: any) => convertShowToMediaItem(show))}
+                movies={recommendedMovies.filter(Boolean).map((movie: Movie) => convertMovieToMediaItem(movie))}
                 onMoviePress={handleShowPress}
               />
             </View>
           )}
-          {newReleasesQuery.data && newReleasesQuery.data.length > 0 && (
+          {newReleasesQuery.data && 'results' in newReleasesQuery.data && newReleasesQuery.data.results.length > 0 && (
             <MovieShelf
               title={t('home.newReleases')}
-              movies={(newReleasesQuery.data || []).map(convertShowToMediaItem)}
+              movies={newReleasesQuery.data.results.map(convertMovieToMediaItem)}
               onMoviePress={handleShowPress}
             />
           )}
-          {trendingQuery.data && trendingQuery.data.length > 0 && (
+          {trendingQuery.data?.results && trendingQuery.data.results.length > 0 && (
             <MovieShelf
               title={t('home.trending')}
-              movies={trendingQuery.data.map(convertShowToMediaItem)}
+              movies={trendingQuery.data.results.map(convertMovieToMediaItem)}
               onMoviePress={handleShowPress}
             />
           )}
-          {popularQuery.data && popularQuery.data.length > 0 && (
+          {popularQuery.data?.results && popularQuery.data.results.length > 0 && (
             <MovieShelf
               title={t('home.popular')}
-              movies={popularQuery.data.map(convertShowToMediaItem)}
+              movies={popularQuery.data.results.map(convertMovieToMediaItem)}
               onMoviePress={handleShowPress}
             />
           )}
-          {topRatedQuery.data && topRatedQuery.data.length > 0 && (
+          {topRatedQuery.data?.results && topRatedQuery.data.results.length > 0 && (
             <MovieShelf
               title={t('home.topRated')}
-              movies={topRatedQuery.data.map(convertShowToMediaItem)}
+              movies={topRatedQuery.data.results.map(convertMovieToMediaItem)}
               onMoviePress={handleShowPress}
             />
           )}
