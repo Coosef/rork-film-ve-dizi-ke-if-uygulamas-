@@ -1,10 +1,6 @@
 import { TVMazeShow, TVMazeCast, TVMazeSearchResult, MediaItem, ShowDetails } from '@/types/tvmaze';
 
-const TVMAZE_API_KEY = process.env.EXPO_PUBLIC_TVMAZE_API_KEY || '';
 const TVMAZE_BASE_URL = 'https://api.tvmaze.com';
-
-console.log('[TVMaze] API Key exists:', !!TVMAZE_API_KEY);
-console.log('[TVMaze] API Key length:', TVMAZE_API_KEY.length);
 
 export const getImageUrl = (show: TVMazeShow | null, size: 'medium' | 'original' = 'medium'): string => {
   if (!show?.image) return 'https://via.placeholder.com/500x750?text=No+Image';
@@ -51,36 +47,61 @@ const fetchTVMaze = async <T>(endpoint: string, params: Record<string, string> =
   }
 };
 
+// Fetch shows with pagination - each page has ~250 shows
+const fetchShowsPaginated = async (page: number = 0): Promise<TVMazeShow[]> => {
+  return fetchTVMaze<TVMazeShow[]>(`/shows`, { page: page.toString() });
+};
+
 export const getTrending = async (): Promise<TVMazeShow[]> => {
-  const shows = await fetchTVMaze<TVMazeShow[]>('/shows');
-  return shows.sort((a, b) => b.weight - a.weight).slice(0, 20);
+  try {
+    // Fetch first 2 pages (about 500 shows) for trending
+    const [page0, page1] = await Promise.all([
+      fetchShowsPaginated(0),
+      fetchShowsPaginated(1),
+    ]);
+    const shows = [...page0, ...page1];
+    return shows.sort((a, b) => b.weight - a.weight).slice(0, 20);
+  } catch (error) {
+    console.error('[TVMaze] Error fetching trending:', error);
+    return [];
+  }
 };
 
 export const getPopular = async (page: number = 1): Promise<TVMazeShow[]> => {
-  const shows = await fetchTVMaze<TVMazeShow[]>('/shows');
-  const start = (page - 1) * 20;
-  const end = start + 20;
-  return shows.sort((a, b) => b.weight - a.weight).slice(start, end);
+  try {
+    const shows = await fetchShowsPaginated(page - 1);
+    return shows.sort((a, b) => b.weight - a.weight).slice(0, 20);
+  } catch (error) {
+    console.error('[TVMaze] Error fetching popular:', error);
+    return [];
+  }
 };
 
 export const getTopRated = async (page: number = 1): Promise<TVMazeShow[]> => {
-  const shows = await fetchTVMaze<TVMazeShow[]>('/shows');
-  const start = (page - 1) * 20;
-  const end = start + 20;
-  return shows
-    .filter(show => show.rating.average !== null)
-    .sort((a, b) => (b.rating.average || 0) - (a.rating.average || 0))
-    .slice(start, end);
+  try {
+    const shows = await fetchShowsPaginated(page - 1);
+    return shows
+      .filter(show => show.rating.average !== null)
+      .sort((a, b) => (b.rating.average || 0) - (a.rating.average || 0))
+      .slice(0, 20);
+  } catch (error) {
+    console.error('[TVMaze] Error fetching top rated:', error);
+    return [];
+  }
 };
 
 export const getShowsByGenre = async (genre: string, page: number = 1): Promise<TVMazeShow[]> => {
-  const shows = await fetchTVMaze<TVMazeShow[]>('/shows');
-  const start = (page - 1) * 20;
-  const end = start + 20;
-  return shows
-    .filter(show => show.genres.includes(genre))
-    .sort((a, b) => b.weight - a.weight)
-    .slice(start, end);
+  try {
+    // Fetch first 3 pages to find shows by genre
+    const shows = await fetchShowsPaginated(page - 1);
+    return shows
+      .filter(show => show.genres.includes(genre))
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, 20);
+  } catch (error) {
+    console.error('[TVMaze] Error fetching shows by genre:', error);
+    return [];
+  }
 };
 
 export const getShowDetails = async (showId: number): Promise<ShowDetails> => {
@@ -105,8 +126,13 @@ export const searchShows = async (query: string): Promise<TVMazeShow[]> => {
 };
 
 export const getDiscoverStack = async (page: number = 1): Promise<MediaItem[]> => {
-  const shows = await getPopular(page);
-  return shows.map(show => convertShowToMediaItem(show));
+  try {
+    const shows = await getPopular(page);
+    return shows.map(show => convertShowToMediaItem(show));
+  } catch (error) {
+    console.error('[TVMaze] Error fetching discover stack:', error);
+    return [];
+  }
 };
 
 export const convertShowToMediaItem = (show: TVMazeShow): MediaItem => ({
@@ -123,22 +149,32 @@ export const convertShowToMediaItem = (show: TVMazeShow): MediaItem => ({
 });
 
 export const getNewReleases = async (): Promise<TVMazeShow[]> => {
-  const shows = await fetchTVMaze<TVMazeShow[]>('/shows');
-  const now = new Date();
-  const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-  
-  return shows
-    .filter(show => {
-      if (!show.premiered) return false;
-      const premiereDate = new Date(show.premiered);
-      return premiereDate >= threeMonthsAgo && premiereDate <= now;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.premiered || 0).getTime();
-      const dateB = new Date(b.premiered || 0).getTime();
-      return dateB - dateA;
-    })
-    .slice(0, 20);
+  try {
+    // Fetch first 2 pages for new releases
+    const [page0, page1] = await Promise.all([
+      fetchShowsPaginated(0),
+      fetchShowsPaginated(1),
+    ]);
+    const shows = [...page0, ...page1];
+    const now = new Date();
+    const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    
+    return shows
+      .filter(show => {
+        if (!show.premiered) return false;
+        const premiereDate = new Date(show.premiered);
+        return premiereDate >= threeMonthsAgo && premiereDate <= now;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.premiered || 0).getTime();
+        const dateB = new Date(b.premiered || 0).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 20);
+  } catch (error) {
+    console.error('[TVMaze] Error fetching new releases:', error);
+    return [];
+  }
 };
 
 export const getSimilarShows = async (showId: number): Promise<TVMazeShow[]> => {
@@ -155,38 +191,72 @@ export const getSimilarShows = async (showId: number): Promise<TVMazeShow[]> => 
       return [];
     }
 
+    // Strategy 1: Search by the main genre (most efficient)
     const mainGenre = show.genres[0];
     
     try {
-      const showsByGenre = await fetchTVMaze<TVMazeShow[]>(`/shows`);
+      // Use search endpoint to find shows by genre keyword
+      const searchResults = await fetchTVMaze<TVMazeSearchResult[]>('/search/shows', { q: mainGenre });
       
-      const similar = showsByGenre
+      if (searchResults && searchResults.length > 0) {
+        const similar = searchResults
+          .map(r => r.show)
+          .filter(s => s.id !== showId)
+          .filter(s => s.genres && s.genres.some(genre => show.genres.includes(genre)))
+          .sort((a, b) => (b.weight || 0) - (a.weight || 0))
+          .slice(0, 20);
+        
+        if (similar.length > 0) {
+          return similar;
+        }
+      }
+    } catch (searchError) {
+      console.log('[TVMaze] Genre search failed, trying alternative methods');
+    }
+
+    // Strategy 2: Try searching by show name keywords to find related content
+    try {
+      const nameKeywords = show.name.split(' ').filter(word => word.length > 3);
+      if (nameKeywords.length > 0) {
+        const keywordResults = await fetchTVMaze<TVMazeSearchResult[]>('/search/shows', { q: nameKeywords[0] });
+        
+        if (keywordResults && keywordResults.length > 0) {
+          const similar = keywordResults
+            .map(r => r.show)
+            .filter(s => s.id !== showId)
+            .filter(s => s.genres && s.genres.some(genre => show.genres.includes(genre)))
+            .sort((a, b) => (b.weight || 0) - (a.weight || 0))
+            .slice(0, 20);
+          
+          if (similar.length > 0) {
+            return similar;
+          }
+        }
+      }
+    } catch (keywordError) {
+      console.log('[TVMaze] Keyword search failed');
+    }
+
+    // Strategy 3: Fetch a single page of shows and filter by genre
+    try {
+      const showsPage = await fetchShowsPaginated(0);
+      const similar = showsPage
         .filter(s => s.id !== showId)
         .filter(s => s.genres && s.genres.some(genre => show.genres.includes(genre)))
         .sort((a, b) => {
-          const aGenreCount = a.genres.filter(g => show.genres.includes(g)).length;
-          const bGenreCount = b.genres.filter(g => show.genres.includes(g)).length;
+          const aGenreCount = a.genres.filter((g: string) => show.genres.includes(g)).length;
+          const bGenreCount = b.genres.filter((g: string) => show.genres.includes(g)).length;
           if (bGenreCount !== aGenreCount) return bGenreCount - aGenreCount;
           return (b.weight || 0) - (a.weight || 0);
         })
         .slice(0, 20);
       
       return similar;
-    } catch (genreError) {
-      console.log('[TVMaze] Could not fetch shows by genre, trying search fallback');
-      
-      try {
-        const searchResults = await fetchTVMaze<TVMazeSearchResult[]>('/search/shows', { q: mainGenre });
-        const similar = searchResults
-          .map(r => r.show)
-          .filter(s => s.id !== showId)
-          .slice(0, 20);
-        return similar;
-      } catch (searchError) {
-        console.log('[TVMaze] Search fallback also failed');
-        return [];
-      }
+    } catch (pageError) {
+      console.log('[TVMaze] Page fetch also failed');
     }
+
+    return [];
   } catch (error) {
     console.error('[TVMaze] Error fetching similar shows:', error);
     return [];
