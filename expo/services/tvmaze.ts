@@ -18,23 +18,37 @@ const fetchTVMaze = async <T>(endpoint: string, params: Record<string, string> =
     url.searchParams.append(key, value);
   });
 
-  console.log('[TVMaze] Fetching:', endpoint);
+  console.log('[TVMaze] Fetching:', url.toString());
   
-  const response = await fetch(url.toString(), {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[TVMaze] Error:', response.status, response.statusText);
-    console.error('[TVMaze] Error body:', errorText);
-    throw new Error(`TVMaze API Error: ${response.status} ${response.statusText}`);
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[TVMaze] Error:', response.status, response.statusText);
+      console.error('[TVMaze] Error body:', errorText);
+      throw new Error(`TVMaze API Error: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('[TVMaze] Request timeout:', endpoint);
+      throw new Error('Request timeout');
+    }
+    throw error;
   }
-  
-  const data = await response.json();
-  return data;
 };
 
 export const getTrending = async (): Promise<TVMazeShow[]> => {
@@ -141,20 +155,38 @@ export const getSimilarShows = async (showId: number): Promise<TVMazeShow[]> => 
       return [];
     }
 
-    const allShows = await fetchTVMaze<TVMazeShow[]>('/shows');
+    const mainGenre = show.genres[0];
     
-    const similar = allShows
-      .filter(s => s.id !== showId)
-      .filter(s => s.genres && s.genres.some(genre => show.genres.includes(genre)))
-      .sort((a, b) => {
-        const aGenreCount = a.genres.filter(g => show.genres.includes(g)).length;
-        const bGenreCount = b.genres.filter(g => show.genres.includes(g)).length;
-        if (bGenreCount !== aGenreCount) return bGenreCount - aGenreCount;
-        return (b.weight || 0) - (a.weight || 0);
-      })
-      .slice(0, 20);
-    
-    return similar;
+    try {
+      const showsByGenre = await fetchTVMaze<TVMazeShow[]>(`/shows`);
+      
+      const similar = showsByGenre
+        .filter(s => s.id !== showId)
+        .filter(s => s.genres && s.genres.some(genre => show.genres.includes(genre)))
+        .sort((a, b) => {
+          const aGenreCount = a.genres.filter(g => show.genres.includes(g)).length;
+          const bGenreCount = b.genres.filter(g => show.genres.includes(g)).length;
+          if (bGenreCount !== aGenreCount) return bGenreCount - aGenreCount;
+          return (b.weight || 0) - (a.weight || 0);
+        })
+        .slice(0, 20);
+      
+      return similar;
+    } catch (genreError) {
+      console.log('[TVMaze] Could not fetch shows by genre, trying search fallback');
+      
+      try {
+        const searchResults = await fetchTVMaze<TVMazeSearchResult[]>('/search/shows', { q: mainGenre });
+        const similar = searchResults
+          .map(r => r.show)
+          .filter(s => s.id !== showId)
+          .slice(0, 20);
+        return similar;
+      } catch (searchError) {
+        console.log('[TVMaze] Search fallback also failed');
+        return [];
+      }
+    }
   } catch (error) {
     console.error('[TVMaze] Error fetching similar shows:', error);
     return [];
