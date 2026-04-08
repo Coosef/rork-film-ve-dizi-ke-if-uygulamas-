@@ -129,19 +129,32 @@ export const getNewReleases = async (): Promise<TVMazeShow[]> => {
 
 export const getSimilarShows = async (showId: number): Promise<TVMazeShow[]> => {
   try {
+    if (!showId || showId <= 0) {
+      console.log('[TVMaze] Invalid showId for similar shows:', showId);
+      return [];
+    }
+
     const show = await fetchTVMaze<TVMazeShow>(`/shows/${showId}`);
+    
+    if (!show || !show.genres || show.genres.length === 0) {
+      console.log('[TVMaze] Show has no genres, returning empty similar shows');
+      return [];
+    }
+
     const allShows = await fetchTVMaze<TVMazeShow[]>('/shows');
     
-    return allShows
+    const similar = allShows
       .filter(s => s.id !== showId)
-      .filter(s => s.genres.some(genre => show.genres.includes(genre)))
+      .filter(s => s.genres && s.genres.some(genre => show.genres.includes(genre)))
       .sort((a, b) => {
         const aGenreCount = a.genres.filter(g => show.genres.includes(g)).length;
         const bGenreCount = b.genres.filter(g => show.genres.includes(g)).length;
         if (bGenreCount !== aGenreCount) return bGenreCount - aGenreCount;
-        return b.weight - a.weight;
+        return (b.weight || 0) - (a.weight || 0);
       })
       .slice(0, 20);
+    
+    return similar;
   } catch (error) {
     console.error('[TVMaze] Error fetching similar shows:', error);
     return [];
