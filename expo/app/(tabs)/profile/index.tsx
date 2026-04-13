@@ -22,8 +22,8 @@ import { usePreferences } from '@/contexts/PreferencesContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import LanguageSelector from '@/components/LanguageSelector';
-import { getShowDetails } from '@/services/tvmaze';
-import { TVMazeShow } from '@/types/tvmaze';
+import { getMovieDetails, getImageUrl } from '@/services/tmdb';
+import { MovieDetails } from '@/types/tmdb';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -42,7 +42,7 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState('Sinema tutkunu');
   const [editUsername, setEditUsername] = useState('');
   const [editBio, setEditBio] = useState('');
-  const [recentShows, setRecentShows] = useState<{ show: TVMazeShow; interaction: any }[]>([]);
+  const [recentShows, setRecentShows] = useState<{ show: MovieDetails; interaction: any }[]>([]);
 
   const loadRecentShows = async (recentlyWatched: any[]) => {
     try {
@@ -51,7 +51,7 @@ export default function ProfileScreen() {
       const showsData = await Promise.all(
         recentlyWatched.map(async (interaction) => {
           try {
-            const show = await getShowDetails(interaction.mediaId);
+            const show = await getMovieDetails(interaction.mediaId);
             return { show, interaction };
           } catch (error) {
             console.error('[Profile] Error loading show:', interaction.mediaId, error);
@@ -60,7 +60,7 @@ export default function ProfileScreen() {
         })
       );
       
-      const validShows = showsData.filter(item => item !== null) as { show: TVMazeShow; interaction: any }[];
+      const validShows = showsData.filter(item => item !== null) as { show: MovieDetails; interaction: any }[];
       console.log('[Profile] Loaded shows:', validShows.length);
       setRecentShows(validShows);
     } catch (error) {
@@ -285,7 +285,7 @@ export default function ProfileScreen() {
             <Text style={styles.sectionTitle}>{t('profile.recentlyWatched')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentlyWatchedScroll}>
               {recentShows.map(({ show, interaction }) => {
-                const imageUri = show.image?.medium || show.image?.original || '';
+                const imageUri = show.poster_path ? getImageUrl(show.poster_path, 'w200') : '';
                 const hasValidImage = imageUri && imageUri.trim() !== '';
                 return (
                   <GlassPanel key={interaction.id} style={styles.recentlyWatchedCard}>
@@ -300,13 +300,13 @@ export default function ProfileScreen() {
                         <Tv size={32} color={Colors.dark.primary} />
                       </View>
                     )}
-                    <Text style={styles.recentlyWatchedTitle} numberOfLines={2}>{show.name}</Text>
-                    {interaction.rating && (
+                    <Text style={styles.recentlyWatchedTitle} numberOfLines={2}>{show.title || ''}</Text>
+                    {interaction.rating ? (
                       <View style={styles.recentlyWatchedRating}>
                         <Star size={12} color={Colors.dark.warning} fill={Colors.dark.warning} />
-                        <Text style={styles.recentlyWatchedRatingText}>{interaction.rating.toFixed(1)}</Text>
+                        <Text style={styles.recentlyWatchedRatingText}>{typeof interaction.rating === 'number' ? interaction.rating.toFixed(1) : '0.0'}</Text>
                       </View>
-                    )}
+                    ) : null}
                   </GlassPanel>
                 );
               })}

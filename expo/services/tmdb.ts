@@ -98,27 +98,27 @@ export const getDiscoverStack = async (page: number = 1): Promise<MediaItem[]> =
 export const convertMovieToMediaItem = (movie: Movie): MediaItem => ({
   id: movie.id,
   type: 'movie' as MediaType,
-  title: movie.title,
-  overview: movie.overview,
-  posterPath: movie.poster_path,
-  backdropPath: movie.backdrop_path,
-  releaseDate: movie.release_date,
-  voteAverage: movie.vote_average,
-  voteCount: movie.vote_count,
-  genres: movie.genre_ids,
+  title: movie.title || '',
+  overview: movie.overview || '',
+  posterPath: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}/w500${movie.poster_path}` : null,
+  backdropPath: movie.backdrop_path ? `${TMDB_IMAGE_BASE_URL}/w780${movie.backdrop_path}` : null,
+  releaseDate: movie.release_date || '',
+  voteAverage: movie.vote_average ?? 0,
+  voteCount: movie.vote_count ?? 0,
+  genres: movie.genre_ids || [],
 });
 
 export const convertTVShowToMediaItem = (show: TVShow): MediaItem => ({
   id: show.id,
   type: 'tv' as MediaType,
-  title: show.name,
-  overview: show.overview,
-  posterPath: show.poster_path,
-  backdropPath: show.backdrop_path,
-  releaseDate: show.first_air_date,
-  voteAverage: show.vote_average,
-  voteCount: show.vote_count,
-  genres: show.genre_ids,
+  title: show.name || '',
+  overview: show.overview || '',
+  posterPath: show.poster_path ? `${TMDB_IMAGE_BASE_URL}/w500${show.poster_path}` : null,
+  backdropPath: show.backdrop_path ? `${TMDB_IMAGE_BASE_URL}/w780${show.backdrop_path}` : null,
+  releaseDate: show.first_air_date || '',
+  voteAverage: show.vote_average ?? 0,
+  voteCount: show.vote_count ?? 0,
+  genres: show.genre_ids || [],
 });
 
 export const GENRES = {

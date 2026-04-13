@@ -37,7 +37,9 @@ export default function MovieCard({
     }
   };
   const imageUrl = movie.posterPath || 'https://via.placeholder.com/500x750?text=No+Image';
-  const year = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : '';
+  const releaseYear = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : null;
+  const year = releaseYear && !isNaN(releaseYear) ? releaseYear : null;
+  const rating = typeof movie.voteAverage === 'number' && !isNaN(movie.voteAverage) ? movie.voteAverage.toFixed(1) : '0.0';
 
   return (
     <Pressable 
@@ -58,7 +60,7 @@ export default function MovieCard({
         {showRating && (
           <View style={styles.ratingBadge}>
             <Star size={12} color={Colors.dark.warning} fill={Colors.dark.warning} />
-            <Text style={styles.ratingText}>{movie.voteAverage.toFixed(1)}</Text>
+            <Text style={styles.ratingText}>{rating}</Text>
           </View>
         )}
         {showWatchlistButton && (
@@ -76,7 +78,7 @@ export default function MovieCard({
       </View>
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={2}>{movie.title}</Text>
-        {year && <Text style={styles.year}>{year}</Text>}
+        {year !== null ? <Text style={styles.year}>{String(year)}</Text> : null}
       </View>
     </Pressable>
   );

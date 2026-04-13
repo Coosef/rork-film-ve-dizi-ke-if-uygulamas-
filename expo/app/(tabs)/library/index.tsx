@@ -18,8 +18,17 @@ import MovieCard from '@/components/MovieCard';
 import GlassPanel from '@/components/GlassPanel';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getShowDetails, convertShowToMediaItem, GENRES } from '@/services/tvmaze';
-import { MediaItem } from '@/types/tvmaze';
+import { getMovieDetails, convertMovieToMediaItem, GENRES } from '@/services/tmdb';
+import { MediaItem } from '@/types/tmdb';
+
+const GENRE_NAMES: Record<number, string> = {
+  28: 'Aksiyon', 12: 'Macera', 16: 'Animasyon', 35: 'Komedi', 80: 'Suç',
+  99: 'Belgesel', 18: 'Drama', 10751: 'Aile', 14: 'Fantastik', 36: 'Tarih',
+  27: 'Korku', 10402: 'Müzik', 9648: 'Gizem', 10749: 'Romantik', 878: 'Bilim Kurgu',
+  10770: 'TV Film', 53: 'Gerilim', 10752: 'Savaş', 37: 'Vahşi Batı',
+};
+
+const GENRE_NAMES_LIST = Object.values(GENRE_NAMES);
 
 type TabType = 'watchlist' | 'watching' | 'watched' | 'favorite' | 'smart';
 type SortType = 'title' | 'rating' | 'date' | 'popularity';
@@ -43,10 +52,10 @@ export default function LibraryScreen() {
   const moviesQueries = useQuery({
     queryKey: ['library', activeTab, movieIds],
     queryFn: async () => {
-      const shows = await Promise.all(
-        movieIds.map(id => getShowDetails(id).catch(() => null))
+      const movies = await Promise.all(
+        movieIds.map(id => getMovieDetails(id).catch(() => null))
       );
-      return shows.filter(Boolean).map(s => convertShowToMediaItem(s!));
+      return movies.filter(Boolean).map(m => convertMovieToMediaItem(m!));
     },
     enabled: movieIds.length > 0,
     staleTime: 1000 * 60 * 60 * 1,
@@ -58,9 +67,10 @@ export default function LibraryScreen() {
     let filtered = [...allMovies];
 
     if (selectedGenres.length > 0) {
-      filtered = filtered.filter(movie => 
-        movie.genres.some(genre => selectedGenres.includes(genre))
-      );
+      filtered = filtered.filter(movie => {
+        const movieGenreNames = (movie.genres || []).map((gId: number) => GENRE_NAMES[gId]).filter(Boolean);
+        return movieGenreNames.some((name: string) => selectedGenres.includes(name));
+      });
     }
 
     filtered.sort((a, b) => {
@@ -364,7 +374,7 @@ export default function LibraryScreen() {
                   )}
                 </View>
                 <View style={styles.genreGrid}>
-                  {GENRES.map(genre => (
+                  {GENRE_NAMES_LIST.map(genre => (
                     <Pressable
                       key={genre}
                       style={[
