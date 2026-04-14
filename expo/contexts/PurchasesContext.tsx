@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
 
 const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
+const isExpoGo = Constants.appOwnership === 'expo';
 
 let Purchases: any = null;
 let LOG_LEVEL: any = null;
@@ -30,7 +32,7 @@ function getRCToken() {
 }
 
 function configureRevenueCat() {
-  if (isConfigured || !isNative || !Purchases) return;
+  if (isConfigured || !isNative || !Purchases || isExpoGo) return;
 
   const apiKey = getRCToken();
   if (!apiKey) {
@@ -76,7 +78,7 @@ export const [PurchasesProvider, usePurchases] = createContextHook(() => {
       }
     },
     staleTime: 1000 * 60 * 5,
-    enabled: isConfigured && isNative,
+    enabled: isConfigured && isNative && !isExpoGo,
   });
 
   const customerInfoQuery = useQuery({
@@ -94,7 +96,7 @@ export const [PurchasesProvider, usePurchases] = createContextHook(() => {
       }
     },
     staleTime: 1000 * 60,
-    enabled: isConfigured && isNative,
+    enabled: isConfigured && isNative && !isExpoGo,
   });
 
   const purchaseMutation = useMutation({
