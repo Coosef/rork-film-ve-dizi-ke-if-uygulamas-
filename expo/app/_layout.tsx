@@ -171,6 +171,13 @@ function RootLayoutNav() {
           presentation: 'card',
         }} 
       />
+      <Stack.Screen 
+        name="series/[id]" 
+        options={{ 
+          headerShown: false,
+          presentation: 'card',
+        }} 
+      />
     </Stack>
 
     <Modal

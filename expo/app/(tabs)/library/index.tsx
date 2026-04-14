@@ -98,7 +98,12 @@ export default function LibraryScreen() {
   const movies = filteredAndSortedMovies;
 
   const handleMoviePress = (movie: MediaItem) => {
-    router.push(`/movie/${movie.id}` as any);
+    const interaction = interactions.find(i => i.mediaId === movie.id);
+    if (interaction?.mediaType === 'tv' || movie.type === 'tv') {
+      router.push(`/series/${movie.id}` as any);
+    } else {
+      router.push(`/movie/${movie.id}` as any);
+    }
   };
 
   const handleRefresh = async () => {

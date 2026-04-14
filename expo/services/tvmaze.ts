@@ -1,4 +1,4 @@
-import { TVMazeShow, TVMazeCast, TVMazeSearchResult, MediaItem, ShowDetails } from '@/types/tvmaze';
+import { TVMazeShow, TVMazeCast, TVMazeSearchResult, MediaItem, ShowDetails, TVMazeEpisode, TVMazeSeason } from '@/types/tvmaze';
 
 const TVMAZE_BASE_URL = 'https://api.tvmaze.com';
 
@@ -114,10 +114,44 @@ export const getShowDetails = async (showId: number): Promise<ShowDetails> => {
     console.log('[TVMaze] Could not fetch cast:', error);
   }
 
+  let seasons: TVMazeSeason[] = [];
+  try {
+    seasons = await fetchTVMaze<TVMazeSeason[]>(`/shows/${showId}/seasons`);
+  } catch (error) {
+    console.log('[TVMaze] Could not fetch seasons:', error);
+  }
+
+  let episodes: TVMazeEpisode[] = [];
+  try {
+    episodes = await fetchTVMaze<TVMazeEpisode[]>(`/shows/${showId}/episodes`);
+  } catch (error) {
+    console.log('[TVMaze] Could not fetch episodes:', error);
+  }
+
   return {
     ...show,
     cast,
+    seasons,
+    episodes,
   };
+};
+
+export const getShowEpisodes = async (showId: number): Promise<TVMazeEpisode[]> => {
+  try {
+    return await fetchTVMaze<TVMazeEpisode[]>(`/shows/${showId}/episodes`);
+  } catch (error) {
+    console.log('[TVMaze] Could not fetch episodes:', error);
+    return [];
+  }
+};
+
+export const getShowSeasons = async (showId: number): Promise<TVMazeSeason[]> => {
+  try {
+    return await fetchTVMaze<TVMazeSeason[]>(`/shows/${showId}/seasons`);
+  } catch (error) {
+    console.log('[TVMaze] Could not fetch seasons:', error);
+    return [];
+  }
 };
 
 export const searchShows = async (query: string): Promise<TVMazeShow[]> => {

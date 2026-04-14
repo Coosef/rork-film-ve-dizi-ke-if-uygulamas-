@@ -78,7 +78,11 @@ export default function SearchScreen() {
   }, [addToHistory]);
 
   const handleMoviePress = useCallback((movie: MediaItem) => {
-    router.push(`/movie/${movie.id}` as any);
+    if (movie.type === 'tv') {
+      router.push(`/series/${movie.id}` as any);
+    } else {
+      router.push(`/movie/${movie.id}` as any);
+    }
   }, [router]);
 
   const handleClearSearch = useCallback(() => {

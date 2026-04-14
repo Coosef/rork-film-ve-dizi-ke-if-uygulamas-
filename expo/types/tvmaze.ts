@@ -123,7 +123,57 @@ export interface MediaItem {
   genres: string[];
 }
 
+export interface TVMazeEpisode {
+  id: number;
+  url: string;
+  name: string;
+  season: number;
+  number: number;
+  type: string;
+  airdate: string;
+  airtime: string;
+  airstamp: string;
+  runtime: number | null;
+  rating: {
+    average: number | null;
+  };
+  image: {
+    medium: string;
+    original: string;
+  } | null;
+  summary: string | null;
+  _links: {
+    self: {
+      href: string;
+    };
+    show: {
+      href: string;
+    };
+  };
+}
+
+export interface TVMazeSeason {
+  id: number;
+  url: string;
+  number: number;
+  name: string;
+  episodeOrder: number | null;
+  premiereDate: string | null;
+  endDate: string | null;
+  network: {
+    id: number;
+    name: string;
+  } | null;
+  image: {
+    medium: string;
+    original: string;
+  } | null;
+  summary: string | null;
+}
+
 export interface ShowDetails extends TVMazeShow {
   cast?: TVMazeCast[];
   similar?: TVMazeShow[];
+  seasons?: TVMazeSeason[];
+  episodes?: TVMazeEpisode[];
 }
