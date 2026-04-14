@@ -347,7 +347,7 @@ export default function HomeScreen() {
                     />
                   </View>
                 </View>
-                <View style={styles.heroContent}>
+                <Pressable style={styles.heroContent} onPress={() => router.push(`/movie/${currentHero.id}` as any)}>
                   <View style={styles.heroBadge}>
                     <TrendingUp size={12} color={Colors.dark.accent} />
                     <Text style={styles.heroBadgeText}>{t('home.trending')}</Text>
@@ -375,7 +375,7 @@ export default function HomeScreen() {
                       ))}
                     </View>
                   )}
-                </View>
+                </Pressable>
               </Animated.View>
             )}
 
