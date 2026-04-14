@@ -20,8 +20,8 @@ import Colors from '@/constants/colors';
 import GenreBadge from '@/components/GenreBadge';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getDiscoverStack, getShowsByGenre, GENRES } from '@/services/tvmaze';
-import { MediaItem } from '@/types/tvmaze';
+import { getDiscoverMovies, convertMovieToMediaItem, GENRE_LIST, GENRES } from '@/services/tmdb';
+import { MediaItem } from '@/types/tmdb';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.9;
@@ -36,7 +36,8 @@ export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [swipedCards, setSwipedCards] = useState<{ index: number; direction: 'left' | 'right' }[]>([]);
-  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [selectedGenreId, setSelectedGenreId] = useState<number | null>(null);
+  const [selectedGenreName, setSelectedGenreName] = useState<string | null>(null);
   const [showGenreModal, setShowGenreModal] = useState(false);
   const [minRating, setMinRating] = useState<number>(0);
   const [minYear, setMinYear] = useState<number>(1900);
@@ -143,25 +144,16 @@ export default function DiscoverScreen() {
   );
 
   const discoverQuery = useQuery({
-    queryKey: ['discover', page, selectedGenre, minRating, minYear, maxYear],
-    queryFn: () => selectedGenre ? getShowsByGenre(selectedGenre, page).then(shows => shows.map(show => ({
-      id: show.id,
-      type: 'tv' as const,
-      title: show.name,
-      overview: show.summary ? show.summary.replace(/<[^>]*>/g, '') : '',
-      posterPath: show.image?.medium || null,
-      backdropPath: show.image?.original || null,
-      releaseDate: show.premiered || '',
-      voteAverage: show.rating.average || 0,
-      voteCount: show.weight,
-      genres: show.genres,
-    })).filter(show => {
-      const year = show.releaseDate ? new Date(show.releaseDate).getFullYear() : 0;
-      return show.voteAverage >= minRating && year >= minYear && year <= maxYear;
-    })) : getDiscoverStack(page).then(shows => shows.filter(show => {
-      const year = show.releaseDate ? new Date(show.releaseDate).getFullYear() : 0;
-      return show.voteAverage >= minRating && year >= minYear && year <= maxYear;
-    })),
+    queryKey: ['discover-tmdb', page, selectedGenreId, minRating, minYear, maxYear],
+    queryFn: async () => {
+      const response = await getDiscoverMovies(page, {
+        genreId: selectedGenreId ?? undefined,
+        minRating: minRating > 0 ? minRating : undefined,
+        minYear: minYear > 1900 ? minYear : undefined,
+        maxYear: maxYear < new Date().getFullYear() ? maxYear : undefined,
+      });
+      return response.results.map(movie => convertMovieToMediaItem(movie));
+    },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 15,
   });
@@ -193,10 +185,10 @@ export default function DiscoverScreen() {
     if (!movie) return;
 
     if (direction === 'right') {
-      addInteraction(movie.id, movie.type, 'favorite');
+      addInteraction(movie.id, 'movie', 'favorite');
       console.log('[Discover] Liked:', movie.title);
     } else {
-      addInteraction(movie.id, movie.type, 'skipped');
+      addInteraction(movie.id, 'movie', 'skipped');
       console.log('[Discover] Skipped:', movie.title);
     }
 
@@ -250,9 +242,9 @@ export default function DiscoverScreen() {
       
       if (lastMovie) {
         const interactionType = lastSwipe.direction === 'right' ? 'favorite' : 'skipped';
-        const interaction = getInteraction(lastMovie.id, lastMovie.type);
+        const interaction = getInteraction(lastMovie.id, 'movie');
         if (interaction && interaction.type === interactionType) {
-          removeInteraction(lastMovie.id, lastMovie.type);
+          removeInteraction(lastMovie.id, 'movie');
         }
       }
       
@@ -279,8 +271,14 @@ export default function DiscoverScreen() {
     handleCardPressRef.current = handleCardPress;
   }, [handleCardPress]);
 
-  const handleGenreSelect = (genre: string) => {
-    setSelectedGenre(genre === selectedGenre ? null : genre);
+  const handleGenreSelect = (genreId: number, genreName: string) => {
+    if (selectedGenreId === genreId) {
+      setSelectedGenreId(null);
+      setSelectedGenreName(null);
+    } else {
+      setSelectedGenreId(genreId);
+      setSelectedGenreName(genreName);
+    }
     setCurrentIndex(0);
     setSwipedCards([]);
     setAllMovies([]);
@@ -289,7 +287,8 @@ export default function DiscoverScreen() {
   };
 
   const clearAllFilters = () => {
-    setSelectedGenre(null);
+    setSelectedGenreId(null);
+    setSelectedGenreName(null);
     setMinRating(0);
     setMinYear(1900);
     setMaxYear(new Date().getFullYear());
@@ -299,7 +298,11 @@ export default function DiscoverScreen() {
     setPage(1);
   };
 
-  const hasActiveFilters = selectedGenre !== null || minRating > 0 || minYear > 1900 || maxYear < new Date().getFullYear();
+  const getGenreName = (genreId: number): string => {
+    return (GENRES as Record<number, string>)[genreId] || String(genreId);
+  };
+
+  const hasActiveFilters = selectedGenreId !== null || minRating > 0 || minYear > 1900 || maxYear < new Date().getFullYear();
 
   if (discoverQuery.isLoading) {
     return (
@@ -347,10 +350,10 @@ export default function DiscoverScreen() {
         </View>
         {hasActiveFilters && (
           <View style={styles.tagsContainer}>
-            {selectedGenre && (
+            {selectedGenreName && (
               <View style={styles.genreTag}>
-                <Text style={styles.genreTagText}>{selectedGenre}</Text>
-                <Pressable onPress={() => setSelectedGenre(null)}>
+                <Text style={styles.genreTagText}>{selectedGenreName}</Text>
+                <Pressable onPress={() => { setSelectedGenreId(null); setSelectedGenreName(null); }}>
                   <X size={16} color={Colors.dark.text} />
                 </Pressable>
               </View>
@@ -402,8 +405,8 @@ export default function DiscoverScreen() {
               </View>
               {nextMovie.genres.length > 0 && (
                 <View style={styles.genresContainer}>
-                  {nextMovie.genres.slice(0, 3).map((genre) => (
-                    <GenreBadge key={genre} genre={genre} variant="primary" />
+                  {nextMovie.genres.slice(0, 3).map((genreId) => (
+                    <GenreBadge key={genreId} genre={getGenreName(genreId as number)} variant="primary" />
                   ))}
                 </View>
               )}
@@ -457,8 +460,8 @@ export default function DiscoverScreen() {
             </View>
             {currentMovie.genres.length > 0 && (
               <View style={styles.genresContainer}>
-                {currentMovie.genres.slice(0, 3).map((genre) => (
-                  <GenreBadge key={genre} genre={genre} variant="primary" />
+                {currentMovie.genres.slice(0, 3).map((genreId) => (
+                  <GenreBadge key={genreId} genre={getGenreName(genreId as number)} variant="primary" />
                 ))}
               </View>
             )}
@@ -522,22 +525,22 @@ export default function DiscoverScreen() {
                 <View style={styles.filterSectionContainer}>
                   <Text style={styles.filterSectionTitle}>{t('discover.genre')}</Text>
                   <View style={styles.genreGrid}>
-                    {GENRES.map(genre => (
+                    {GENRE_LIST.map(genre => (
                       <Pressable
-                        key={genre}
+                        key={genre.id}
                         style={[
                           styles.genreItem,
-                          selectedGenre === genre && styles.genreItemActive,
+                          selectedGenreId === genre.id && styles.genreItemActive,
                         ]}
-                        onPress={() => handleGenreSelect(genre)}
+                        onPress={() => handleGenreSelect(genre.id, genre.name)}
                       >
                         <Text
                           style={[
                             styles.genreItemText,
-                            selectedGenre === genre && styles.genreItemTextActive,
+                            selectedGenreId === genre.id && styles.genreItemTextActive,
                           ]}
                         >
-                          {genre}
+                          {genre.name}
                         </Text>
                       </Pressable>
                     ))}

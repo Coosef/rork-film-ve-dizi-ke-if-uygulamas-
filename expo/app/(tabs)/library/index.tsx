@@ -18,7 +18,7 @@ import MovieCard from '@/components/MovieCard';
 import GlassPanel from '@/components/GlassPanel';
 import { useLibrary } from '@/contexts/LibraryContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getMovieDetails, convertMovieToMediaItem, GENRES } from '@/services/tmdb';
+import { getMovieDetailsSafe, convertMovieToMediaItem, GENRES } from '@/services/tmdb';
 import { MediaItem } from '@/types/tmdb';
 
 const GENRE_NAMES: Record<number, string> = {
@@ -53,7 +53,7 @@ export default function LibraryScreen() {
     queryKey: ['library', activeTab, movieIds],
     queryFn: async () => {
       const movies = await Promise.all(
-        movieIds.map(id => getMovieDetails(id).catch(() => null))
+        movieIds.map(id => getMovieDetailsSafe(id))
       );
       return movies.filter(Boolean).map(m => convertMovieToMediaItem(m!));
     },

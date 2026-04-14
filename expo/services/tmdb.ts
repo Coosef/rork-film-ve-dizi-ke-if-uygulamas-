@@ -21,7 +21,6 @@ const fetchTMDB = async <T>(endpoint: string, params: Record<string, string> = {
   });
 
   console.log('[TMDB] Fetching:', endpoint);
-  console.log('[TMDB] Full URL:', url.toString().replace(TMDB_API_KEY, 'API_KEY_HIDDEN'));
   
   const response = await fetch(url.toString(), {
     headers: {
@@ -31,9 +30,8 @@ const fetchTMDB = async <T>(endpoint: string, params: Record<string, string> = {
   
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('[TMDB] Error:', response.status, response.statusText);
-    console.error('[TMDB] Error body:', errorText);
-    throw new Error(`TMDB API Error: ${response.status} ${response.statusText}`);
+    console.warn('[TMDB] Request failed:', response.status, endpoint, errorText);
+    throw new Error(`TMDB API Error: ${response.status}`);
   }
   
   const data = await response.json();
@@ -69,9 +67,21 @@ export const getMoviesByGenre = async (genreId: number, page: number = 1): Promi
 };
 
 export const getMovieDetails = async (movieId: number): Promise<MovieDetails> => {
+  if (!movieId || movieId <= 0) {
+    throw new Error('Invalid movie ID');
+  }
   return fetchTMDB<MovieDetails>(`/movie/${movieId}`, {
     append_to_response: 'credits,videos,similar',
   });
+};
+
+export const getMovieDetailsSafe = async (movieId: number): Promise<MovieDetails | null> => {
+  try {
+    return await getMovieDetails(movieId);
+  } catch {
+    console.log('[TMDB] Movie not found:', movieId);
+    return null;
+  }
 };
 
 export const searchMovies = async (query: string, page: number = 1): Promise<MovieListResponse> => {
@@ -84,6 +94,43 @@ export const searchMovies = async (query: string, page: number = 1): Promise<Mov
 export const getSimilarMovies = async (movieId: number, page: number = 1): Promise<MovieListResponse> => {
   return fetchTMDB<MovieListResponse>(`/movie/${movieId}/similar`, { page: page.toString() });
 };
+
+export const getDiscoverMovies = async (
+  page: number = 1,
+  options: { genreId?: number; minRating?: number; minYear?: number; maxYear?: number } = {}
+): Promise<MovieListResponse> => {
+  const params: Record<string, string> = {
+    page: page.toString(),
+    sort_by: 'popularity.desc',
+    'vote_count.gte': '50',
+  };
+  if (options.genreId) params.with_genres = options.genreId.toString();
+  if (options.minRating && options.minRating > 0) params['vote_average.gte'] = options.minRating.toString();
+  if (options.minYear && options.minYear > 1900) params['primary_release_date.gte'] = `${options.minYear}-01-01`;
+  if (options.maxYear && options.maxYear < new Date().getFullYear()) params['primary_release_date.lte'] = `${options.maxYear}-12-31`;
+  return fetchTMDB<MovieListResponse>('/discover/movie', params);
+};
+
+export const GENRE_LIST: { id: number; name: string }[] = [
+  { id: 28, name: 'Aksiyon' },
+  { id: 12, name: 'Macera' },
+  { id: 16, name: 'Animasyon' },
+  { id: 35, name: 'Komedi' },
+  { id: 80, name: 'Suç' },
+  { id: 99, name: 'Belgesel' },
+  { id: 18, name: 'Drama' },
+  { id: 10751, name: 'Aile' },
+  { id: 14, name: 'Fantastik' },
+  { id: 36, name: 'Tarih' },
+  { id: 27, name: 'Korku' },
+  { id: 10402, name: 'Müzik' },
+  { id: 9648, name: 'Gizem' },
+  { id: 10749, name: 'Romantik' },
+  { id: 878, name: 'Bilim Kurgu' },
+  { id: 53, name: 'Gerilim' },
+  { id: 10752, name: 'Savaş' },
+  { id: 37, name: 'Vahşi Batı' },
+];
 
 export const getDiscoverStack = async (page: number = 1): Promise<MediaItem[]> => {
   const response = await fetchTMDB<MovieListResponse>('/discover/movie', {

@@ -22,7 +22,7 @@ import { usePreferences } from '@/contexts/PreferencesContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import LanguageSelector from '@/components/LanguageSelector';
-import { getMovieDetails, getImageUrl } from '@/services/tmdb';
+import { getMovieDetailsSafe, getImageUrl } from '@/services/tmdb';
 import { MovieDetails } from '@/types/tmdb';
 
 export default function ProfileScreen() {
@@ -50,13 +50,9 @@ export default function ProfileScreen() {
       
       const showsData = await Promise.all(
         recentlyWatched.map(async (interaction) => {
-          try {
-            const show = await getMovieDetails(interaction.mediaId);
-            return { show, interaction };
-          } catch (error) {
-            console.error('[Profile] Error loading show:', interaction.mediaId, error);
-            return null;
-          }
+          const show = await getMovieDetailsSafe(interaction.mediaId);
+          if (!show) return null;
+          return { show, interaction };
         })
       );
       

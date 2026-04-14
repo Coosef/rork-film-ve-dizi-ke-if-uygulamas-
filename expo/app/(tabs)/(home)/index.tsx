@@ -28,7 +28,7 @@ import {
   convertMovieToMediaItem,
   searchMovies,
   getUpcoming,
-  getMovieDetails,
+  getMovieDetailsSafe,
 } from '@/services/tmdb';
 import { MediaItem, Movie } from '@/types/tmdb';
 // import { getAIRecommendations } from '@/services/ai-recommendations';
@@ -94,14 +94,9 @@ export default function HomeScreen() {
       console.log('[ContinueWatching] Fetching movies for', watchingInteractions.length, 'interactions');
       const movies = await Promise.all(
         watchingInteractions.map(async (interaction) => {
-          try {
-            const movie = await getMovieDetails(interaction.mediaId);
-            console.log('[ContinueWatching] Fetched movie:', movie.title, 'Image:', movie.poster_path);
-            return { movie, interaction };
-          } catch (error) {
-            console.error('[ContinueWatching] Error fetching movie:', error);
-            return null;
-          }
+          const movie = await getMovieDetailsSafe(interaction.mediaId);
+          if (!movie) return null;
+          return { movie, interaction };
         })
       );
       const filtered = movies.filter(Boolean);
@@ -140,16 +135,13 @@ export default function HomeScreen() {
       }
       
       for (const interaction of allInteractions.slice(0, 15)) {
-        try {
-          const movie = await getMovieDetails(interaction.mediaId);
-          
-          movie.genres?.forEach((genre) => {
-            const weight = interaction.type === 'favorite' ? 3 : interaction.type === 'watching' ? 2 : 1;
-            genreCounts[genre.id] = (genreCounts[genre.id] || 0) + weight;
-          });
-        } catch (error) {
-          console.error('[Recommended] Error fetching movie:', error);
-        }
+        const movie = await getMovieDetailsSafe(interaction.mediaId);
+        if (!movie) continue;
+        
+        movie.genres?.forEach((genre) => {
+          const weight = interaction.type === 'favorite' ? 3 : interaction.type === 'watching' ? 2 : 1;
+          genreCounts[genre.id] = (genreCounts[genre.id] || 0) + weight;
+        });
       }
 
       const topGenreIds = Object.entries(genreCounts)

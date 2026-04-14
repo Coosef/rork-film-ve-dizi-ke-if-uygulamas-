@@ -47,6 +47,7 @@ export default function MovieDetailScreen() {
     queryKey: ['tmdb-movie', movieId],
     queryFn: () => getMovieDetails(movieId),
     enabled: movieId > 0,
+    retry: 1,
   });
 
   const similarQuery = useQuery({
