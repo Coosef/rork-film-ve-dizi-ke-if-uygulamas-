@@ -23,19 +23,32 @@ let isConfigured = false;
 function configureRevenueCat() {
   if (isConfigured) return;
   
-  const apiKey = getRCToken();
-  if (!apiKey) {
-    console.error('RevenueCat API key not found');
+  if (Platform.OS === 'web') {
+    console.log('RevenueCat not supported on web, skipping configuration');
     return;
   }
 
-  Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-  Purchases.configure({ apiKey });
-  isConfigured = true;
-  console.log('RevenueCat configured successfully');
+  const apiKey = getRCToken();
+  if (!apiKey) {
+    console.warn('RevenueCat API key not found, skipping configuration');
+    return;
+  }
+
+  try {
+    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    Purchases.configure({ apiKey });
+    isConfigured = true;
+    console.log('RevenueCat configured successfully');
+  } catch (error) {
+    console.warn('RevenueCat configuration failed:', error);
+  }
 }
 
-configureRevenueCat();
+try {
+  configureRevenueCat();
+} catch (error) {
+  console.warn('RevenueCat init error:', error);
+}
 
 export const [PurchasesProvider, usePurchases] = createContextHook(() => {
   const queryClient = useQueryClient();
@@ -44,32 +57,42 @@ export const [PurchasesProvider, usePurchases] = createContextHook(() => {
   const offeringsQuery = useQuery({
     queryKey: ['revenuecat-offerings'],
     queryFn: async () => {
+      if (!isConfigured) {
+        console.log('RevenueCat not configured, skipping offerings fetch');
+        return null;
+      }
       try {
         const offerings = await Purchases.getOfferings();
         console.log('Offerings fetched:', offerings);
         return offerings;
       } catch (error) {
-        console.error('Error fetching offerings:', error);
-        throw error;
+        console.warn('Error fetching offerings:', error);
+        return null;
       }
     },
     staleTime: 1000 * 60 * 5,
+    enabled: isConfigured,
   });
 
   const customerInfoQuery = useQuery({
     queryKey: ['revenuecat-customer-info'],
     queryFn: async () => {
+      if (!isConfigured) {
+        console.log('RevenueCat not configured, skipping customer info fetch');
+        return null;
+      }
       try {
         const info = await Purchases.getCustomerInfo();
         console.log('Customer info fetched:', info);
         setCustomerInfo(info);
         return info;
       } catch (error) {
-        console.error('Error fetching customer info:', error);
-        throw error;
+        console.warn('Error fetching customer info:', error);
+        return null;
       }
     },
     staleTime: 1000 * 60,
+    enabled: isConfigured,
   });
 
   const purchaseMutation = useMutation({

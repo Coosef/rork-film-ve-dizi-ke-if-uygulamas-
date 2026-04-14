@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 export const trpc = createTRPCReact<AppRouter>();
 
 const getBaseUrl = () => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && window.location && window.location.origin) {
     const origin = window.location.origin;
     console.log('[tRPC Client] Using window origin:', origin);
     return origin;
@@ -17,6 +17,12 @@ const getBaseUrl = () => {
   if (envUrl) {
     console.log('[tRPC Client] Using env URL:', envUrl);
     return envUrl;
+  }
+  
+  const rorkUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
+  if (rorkUrl) {
+    console.log('[tRPC Client] Using RORK API URL:', rorkUrl);
+    return rorkUrl;
   }
   
   console.log('[tRPC Client] Fallback to localhost');
