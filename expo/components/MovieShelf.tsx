@@ -17,15 +17,17 @@ export default function MovieShelf({ title, movies, onMoviePress, onSeeAll }: Mo
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        {onSeeAll && (
-          <Pressable onPress={onSeeAll} style={styles.seeAllButton}>
-            <Text style={styles.seeAllText}>Tümünü Gör</Text>
-            <ChevronRight size={16} color={Colors.dark.primary} />
-          </Pressable>
-        )}
-      </View>
+      {title ? (
+        <View style={styles.header}>
+          <Text style={styles.title}>{title}</Text>
+          {onSeeAll && (
+            <Pressable onPress={onSeeAll} style={styles.seeAllButton}>
+              <Text style={styles.seeAllText}>Tümünü Gör</Text>
+              <ChevronRight size={14} color={Colors.dark.accent} />
+            </Pressable>
+          )}
+        </View>
+      ) : null}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -36,7 +38,7 @@ export default function MovieShelf({ title, movies, onMoviePress, onSeeAll }: Mo
             <MovieCard
               movie={movie}
               onPress={() => onMoviePress(movie)}
-              width={140}
+              width={130}
             />
           </View>
         ))}
@@ -47,35 +49,36 @@ export default function MovieShelf({ title, movies, onMoviePress, onSeeAll }: Mo
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   title: {
     color: Colors.dark.text,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700' as const,
+    letterSpacing: 0.3,
   },
   seeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
   },
   seeAllText: {
-    color: Colors.dark.primary,
-    fontSize: 14,
+    color: Colors.dark.accent,
+    fontSize: 13,
     fontWeight: '600' as const,
   },
   scrollContent: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 10,
   },
   cardWrapper: {
-    width: 140,
+    width: 130,
   },
 });

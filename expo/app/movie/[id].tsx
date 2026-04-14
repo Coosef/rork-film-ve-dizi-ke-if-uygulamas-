@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Plus, Check, Heart, Star, Clock, Calendar, Play, ExternalLink, MessageCircle, ThumbsUp, Building2, Globe, Edit3 } from 'lucide-react-native';
+import { ArrowLeft, Plus, Check, Heart, Star, Clock, Calendar, Play, ExternalLink, MessageCircle, ThumbsUp, Building2, Globe, Edit3, Share2, Bookmark, BookmarkCheck } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import YouTubePlayer from '@/components/YouTubePlayer';
 import {
   StyleSheet,
@@ -16,6 +16,8 @@ import {
   Linking,
   Modal,
   TextInput,
+  Platform,
+  Share,
 } from 'react-native';
 import Colors from '@/constants/colors';
 import GenreBadge from '@/components/GenreBadge';
@@ -32,6 +34,7 @@ import { MediaItem } from '@/types/tmdb';
 import { getStreamingProviders, StreamingProvider } from '@/services/streaming';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const BACKDROP_HEIGHT = SCREEN_WIDTH * 0.75;
 
 export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -119,10 +122,22 @@ export default function MovieDetailScreen() {
     }
   };
 
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `${movie?.title} - TMDB Rating: ${movie?.vote_average?.toFixed(1)}/10`,
+        title: movie?.title || '',
+      });
+    } catch (error) {
+      console.log('[MovieDetail] Share error:', error);
+    }
+  };
+
   if (movieQuery.isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.loadingDot} />
         <Text style={styles.loadingText}>Yükleniyor...</Text>
       </View>
     );
@@ -158,7 +173,7 @@ export default function MovieDetailScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.headerContainer}>
@@ -169,15 +184,26 @@ export default function MovieDetailScreen() {
               contentFit="cover"
             />
           ) : (
-            <View style={[styles.backdropImage, { backgroundColor: Colors.dark.surfaceLight }]} />
+            <View style={[styles.backdropImage, { backgroundColor: Colors.dark.backgroundSecondary }]} />
           )}
           <LinearGradient
-            colors={['transparent', Colors.dark.background]}
+            colors={['rgba(11,15,26,0.2)', 'rgba(11,15,26,0.6)', Colors.dark.background]}
+            locations={[0, 0.6, 1]}
             style={styles.gradient}
           />
           <Pressable style={[styles.backButton, { top: insets.top + 8 }]} onPress={handleBack}>
-            <ArrowLeft size={24} color={Colors.dark.text} />
+            <ArrowLeft size={22} color={Colors.dark.text} />
           </Pressable>
+          <Pressable style={[styles.shareButton, { top: insets.top + 8 }]} onPress={handleShare}>
+            <Share2 size={20} color={Colors.dark.text} />
+          </Pressable>
+          {(trailers.length > 0 || videos.length > 0) && (
+            <Pressable style={styles.playOverlay} onPress={handlePlayTrailer}>
+              <View style={styles.playCircle}>
+                <Play size={28} color="#FFFFFF" fill="#FFFFFF" />
+              </View>
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.content}>
@@ -189,28 +215,24 @@ export default function MovieDetailScreen() {
                 contentFit="cover"
               />
             ) : (
-              <View style={[styles.posterImage, { backgroundColor: Colors.dark.surfaceLight }]} />
+              <View style={[styles.posterImage, { backgroundColor: Colors.dark.backgroundSecondary }]} />
             )}
             <View style={styles.titleSection}>
               <Text style={styles.title}>{movie.title}</Text>
               <View style={styles.metaRow}>
-                <View style={styles.metaItem}>
-                  <Star size={16} color={Colors.dark.warning} fill={Colors.dark.warning} />
-                  <Text style={styles.metaText}>{movie.vote_average?.toFixed(1) || 'N/A'}</Text>
+                <View style={styles.ratingBadge}>
+                  <Star size={14} color="#FBBF24" fill="#FBBF24" />
+                  <Text style={styles.ratingValue}>{movie.vote_average?.toFixed(1) || 'N/A'}</Text>
                 </View>
-                <View style={styles.metaItem}>
-                  <Calendar size={16} color={Colors.dark.textSecondary} />
+                {movie.release_date && (
                   <Text style={styles.metaText}>
-                    {movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}
+                    {new Date(movie.release_date).getFullYear()}
                   </Text>
-                </View>
+                )}
                 {movie.runtime > 0 && (
-                  <View style={styles.metaItem}>
-                    <Clock size={16} color={Colors.dark.textSecondary} />
-                    <Text style={styles.metaText}>
-                      {runtimeHours > 0 ? `${runtimeHours}s ` : ''}{runtimeMinutes}dk
-                    </Text>
-                  </View>
+                  <Text style={styles.metaText}>
+                    {runtimeHours > 0 ? `${runtimeHours}s ` : ''}{runtimeMinutes}dk
+                  </Text>
                 )}
               </View>
               <View style={styles.actions}>
@@ -219,40 +241,43 @@ export default function MovieDetailScreen() {
                   onPress={handleToggleWatchlist}
                 >
                   {inWatchlist ? (
-                    <Check size={20} color={Colors.dark.text} />
+                    <BookmarkCheck size={18} color={Colors.dark.text} />
                   ) : (
-                    <Plus size={20} color={Colors.dark.text} />
+                    <Bookmark size={18} color={Colors.dark.text} />
                   )}
                 </Pressable>
                 <Pressable
-                  style={[styles.actionButton, favorite && styles.actionButtonActive]}
+                  style={[styles.actionButton, favorite && styles.favoriteActive]}
                   onPress={handleToggleFavorite}
                 >
                   <Heart
-                    size={20}
-                    color={favorite ? Colors.dark.accent : Colors.dark.text}
-                    fill={favorite ? Colors.dark.accent : 'transparent'}
+                    size={18}
+                    color={favorite ? '#EF4444' : Colors.dark.text}
+                    fill={favorite ? '#EF4444' : 'transparent'}
                   />
                 </Pressable>
-                {(trailers.length > 0 || videos.length > 0) && (
-                  <Pressable style={styles.actionButton} onPress={handlePlayTrailer}>
-                    <Play size={20} color={Colors.dark.text} />
-                  </Pressable>
-                )}
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={handleOpenReviewModal}
+                >
+                  <Star size={18} color={userReview ? '#FBBF24' : Colors.dark.text} fill={userReview ? '#FBBF24' : 'transparent'} />
+                </Pressable>
               </View>
             </View>
           </View>
 
           {genreNames.length > 0 && (
-            <View style={styles.genresContainer}>
-              {genreNames.map(genre => (
-                <GenreBadge key={genre} genre={genre} />
-              ))}
-            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.genresScroll}>
+              <View style={styles.genresContainer}>
+                {genreNames.map(genre => (
+                  <GenreBadge key={genre} genre={genre} />
+                ))}
+              </View>
+            </ScrollView>
           )}
 
           {movie.tagline ? (
-            <Text style={styles.tagline}>"{movie.tagline}"</Text>
+            <Text style={styles.tagline}>{movie.tagline}</Text>
           ) : null}
 
           {movie.overview ? (
@@ -266,7 +291,7 @@ export default function MovieDetailScreen() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Değerlendirmeniz</Text>
               <Pressable style={styles.editButton} onPress={handleOpenReviewModal}>
-                <Edit3 size={16} color={Colors.dark.primary} />
+                <Edit3 size={14} color={Colors.dark.primary} />
                 <Text style={styles.editButtonText}>
                   {userReview ? 'Düzenle' : 'Ekle'}
                 </Text>
@@ -289,7 +314,7 @@ export default function MovieDetailScreen() {
               </View>
             ) : (
               <Pressable style={styles.addReviewCard} onPress={handleOpenReviewModal}>
-                <Star size={32} color={Colors.dark.primary} />
+                <Star size={28} color={Colors.dark.primary} />
                 <Text style={styles.addReviewText}>Bu filmi değerlendirin</Text>
                 <Text style={styles.addReviewSubtext}>Puanınızı ve yorumunuzu paylaşın</Text>
               </Pressable>
@@ -307,7 +332,7 @@ export default function MovieDetailScreen() {
                     onPress={() => setPlayerVideo({ key: video.key, name: video.name })}
                   >
                     <View style={styles.videoIcon}>
-                      <Play size={24} color={Colors.dark.primary} />
+                      <Play size={20} color={Colors.dark.accent} fill={Colors.dark.accent} />
                     </View>
                     <View style={styles.videoInfo}>
                       <Text style={styles.videoTitle} numberOfLines={1}>{video.name}</Text>
@@ -315,7 +340,7 @@ export default function MovieDetailScreen() {
                         {video.type === 'Trailer' ? 'Fragman' : video.type === 'Teaser' ? 'Teaser' : video.type}
                       </Text>
                     </View>
-                    <ExternalLink size={20} color={Colors.dark.textSecondary} />
+                    <ExternalLink size={16} color={Colors.dark.textTertiary} />
                   </Pressable>
                 ))}
               </View>
@@ -327,7 +352,19 @@ export default function MovieDetailScreen() {
               <Text style={styles.sectionTitle}>Nerede İzleyebilirsiniz?</Text>
               <View style={styles.platformsContainer}>
                 {streamingProviders.map((provider: StreamingProvider, index: number) => (
-                  <View key={`provider-${provider.providerId}-${index}`} style={styles.platformCard}>
+                  <Pressable
+                    key={`provider-${provider.providerId}-${index}`}
+                    style={styles.platformCard}
+                    onPress={() => {
+                      if (provider.link) {
+                        Linking.openURL(provider.link).catch(() => {
+                          Linking.openURL(`https://www.themoviedb.org/movie/${movieId}/watch`);
+                        });
+                      } else {
+                        Linking.openURL(`https://www.themoviedb.org/movie/${movieId}/watch`);
+                      }
+                    }}
+                  >
                     {provider.logoPath ? (
                       <Image
                         source={{ uri: provider.logoPath }}
@@ -341,148 +378,79 @@ export default function MovieDetailScreen() {
                       <Text style={styles.platformName}>{provider.provider}</Text>
                       <Text style={styles.platformType}>Streaming</Text>
                     </View>
-                    <Pressable
-                      style={styles.platformButton}
-                      onPress={() => {
-                        if (provider.link) {
-                          Linking.openURL(provider.link).catch(() => {
-                            Linking.openURL(`https://www.themoviedb.org/movie/${movieId}/watch`);
-                          });
-                        } else {
-                          Linking.openURL(`https://www.themoviedb.org/movie/${movieId}/watch`);
-                        }
-                      }}
-                    >
-                      <Text style={styles.platformButtonText}>Git</Text>
-                    </Pressable>
-                  </View>
+                    <View style={styles.platformArrow}>
+                      <ExternalLink size={16} color={Colors.dark.primary} />
+                    </View>
+                  </Pressable>
                 ))}
               </View>
-              <Pressable
-                style={styles.moreProvidersButton}
-                onPress={() => Linking.openURL(`https://www.themoviedb.org/movie/${movieId}/watch`)}
-              >
-                <Globe size={16} color={Colors.dark.primary} />
-                <Text style={styles.moreProvidersText}>Tüm platformları görüntüle</Text>
-              </Pressable>
             </View>
           )}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Yapım Bilgileri</Text>
-            <View style={styles.productionContainer}>
+            <View style={styles.infoGrid}>
               {director && (
-                <View style={styles.productionItem}>
-                  <View style={styles.productionIcon}>
-                    <Star size={20} color={Colors.dark.primary} />
-                  </View>
-                  <View style={styles.productionInfo}>
-                    <Text style={styles.productionLabel}>Yönetmen</Text>
-                    <Text style={styles.productionValue}>{director.name}</Text>
-                  </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Yönetmen</Text>
+                  <Text style={styles.infoValue}>{director.name}</Text>
                 </View>
               )}
-
-              {movie.production_companies && movie.production_companies.length > 0 && (
-                <View style={styles.productionItem}>
-                  <View style={styles.productionIcon}>
-                    <Building2 size={20} color={Colors.dark.primary} />
-                  </View>
-                  <View style={styles.productionInfo}>
-                    <Text style={styles.productionLabel}>Yapımcı</Text>
-                    <Text style={styles.productionValue}>
-                      {movie.production_companies.slice(0, 2).map(c => c.name).join(', ')}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {movie.production_countries && movie.production_countries.length > 0 && (
-                <View style={styles.productionItem}>
-                  <View style={styles.productionIcon}>
-                    <Globe size={20} color={Colors.dark.primary} />
-                  </View>
-                  <View style={styles.productionInfo}>
-                    <Text style={styles.productionLabel}>Ülke</Text>
-                    <Text style={styles.productionValue}>
-                      {movie.production_countries.map(c => c.name).join(', ')}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.productionItem}>
-                <View style={styles.productionIcon}>
-                  <Calendar size={20} color={Colors.dark.primary} />
-                </View>
-                <View style={styles.productionInfo}>
-                  <Text style={styles.productionLabel}>Durum</Text>
-                  <Text style={styles.productionValue}>
-                    {movie.status === 'Released' ? 'Yayınlandı' :
-                     movie.status === 'Post Production' ? 'Post Prodüksiyon' :
-                     movie.status === 'In Production' ? 'Yapım Aşamasında' :
-                     movie.status === 'Planned' ? 'Planlandı' : movie.status}
+              {movie.release_date && (
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Yayın Tarihi</Text>
+                  <Text style={styles.infoValue}>
+                    {new Date(movie.release_date).toLocaleDateString('tr-TR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
                   </Text>
                 </View>
+              )}
+              {movie.production_companies && movie.production_companies.length > 0 && (
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Yapımcı</Text>
+                  <Text style={styles.infoValue}>
+                    {movie.production_companies.slice(0, 2).map(c => c.name).join(', ')}
+                  </Text>
+                </View>
+              )}
+              {movie.production_countries && movie.production_countries.length > 0 && (
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Ülke</Text>
+                  <Text style={styles.infoValue}>
+                    {movie.production_countries.map(c => c.name).join(', ')}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Durum</Text>
+                <Text style={styles.infoValue}>
+                  {movie.status === 'Released' ? 'Yayınlandı' :
+                   movie.status === 'Post Production' ? 'Post Prodüksiyon' :
+                   movie.status === 'In Production' ? 'Yapım Aşamasında' :
+                   movie.status === 'Planned' ? 'Planlandı' : movie.status}
+                </Text>
               </View>
-
               {movie.spoken_languages && movie.spoken_languages.length > 0 && (
-                <View style={styles.productionItem}>
-                  <View style={styles.productionIcon}>
-                    <MessageCircle size={20} color={Colors.dark.primary} />
-                  </View>
-                  <View style={styles.productionInfo}>
-                    <Text style={styles.productionLabel}>Dil</Text>
-                    <Text style={styles.productionValue}>
-                      {movie.spoken_languages.map(l => l.name).join(', ')}
-                    </Text>
-                  </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Dil</Text>
+                  <Text style={styles.infoValue}>
+                    {movie.spoken_languages.map(l => l.name).join(', ')}
+                  </Text>
                 </View>
               )}
-
-              {movie.release_date && (
-                <View style={styles.productionItem}>
-                  <View style={styles.productionIcon}>
-                    <Clock size={20} color={Colors.dark.primary} />
-                  </View>
-                  <View style={styles.productionInfo}>
-                    <Text style={styles.productionLabel}>Yayın Tarihi</Text>
-                    <Text style={styles.productionValue}>
-                      {new Date(movie.release_date).toLocaleDateString('tr-TR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
               {movie.budget > 0 && (
-                <View style={styles.productionItem}>
-                  <View style={styles.productionIcon}>
-                    <Building2 size={20} color={Colors.dark.primary} />
-                  </View>
-                  <View style={styles.productionInfo}>
-                    <Text style={styles.productionLabel}>Bütçe</Text>
-                    <Text style={styles.productionValue}>
-                      ${(movie.budget / 1000000).toFixed(1)}M
-                    </Text>
-                  </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Bütçe</Text>
+                  <Text style={styles.infoValue}>${(movie.budget / 1000000).toFixed(1)}M</Text>
                 </View>
               )}
-
               {movie.revenue > 0 && (
-                <View style={styles.productionItem}>
-                  <View style={styles.productionIcon}>
-                    <Building2 size={20} color={Colors.dark.primary} />
-                  </View>
-                  <View style={styles.productionInfo}>
-                    <Text style={styles.productionLabel}>Hasılat</Text>
-                    <Text style={styles.productionValue}>
-                      ${(movie.revenue / 1000000).toFixed(1)}M
-                    </Text>
-                  </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Hasılat</Text>
+                  <Text style={styles.infoValue}>${(movie.revenue / 1000000).toFixed(1)}M</Text>
                 </View>
               )}
             </View>
@@ -524,6 +492,8 @@ export default function MovieDetailScreen() {
               onMoviePress={handleMoviePress}
             />
           )}
+
+          <View style={styles.bottomSpacer} />
         </View>
       </ScrollView>
 
@@ -539,6 +509,7 @@ export default function MovieDetailScreen() {
             onPress={() => setShowReviewModal(false)}
           />
           <View style={styles.reviewModalContent}>
+            <View style={styles.reviewModalHandle} />
             <View style={styles.reviewModalHeader}>
               <Text style={styles.reviewModalTitle}>Değerlendirme</Text>
               <Pressable onPress={() => setShowReviewModal(false)}>
@@ -578,7 +549,7 @@ export default function MovieDetailScreen() {
               <TextInput
                 style={styles.reviewInput}
                 placeholder="Düşüncelerinizi paylaşın..."
-                placeholderTextColor={Colors.dark.textSecondary}
+                placeholderTextColor={Colors.dark.textTertiary}
                 value={reviewText}
                 onChangeText={setReviewText}
                 multiline
@@ -618,17 +589,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.dark.background,
+    gap: 12,
+  },
+  loadingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.dark.accent,
   },
   loadingText: {
-    color: Colors.dark.text,
-    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    fontSize: 14,
   },
   scrollView: {
     flex: 1,
   },
   headerContainer: {
     width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH * 0.6,
+    height: BACKDROP_HEIGHT,
     position: 'relative',
   },
   backdropImage: {
@@ -640,150 +618,261 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '50%',
+    height: '100%',
   },
   backButton: {
     position: 'absolute',
-    top: 48,
     left: 16,
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.dark.glass.background,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: Colors.dark.glass.border,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  shareButton: {
+    position: 'absolute',
+    right: 16,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  playOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(239, 68, 68, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 4,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 8,
   },
   content: {
-    padding: 16,
+    paddingHorizontal: 16,
+    marginTop: -20,
   },
   posterRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 14,
     marginBottom: 16,
   },
   posterImage: {
-    width: 120,
-    height: 180,
+    width: 110,
+    height: 165,
     borderRadius: 12,
     backgroundColor: Colors.dark.backgroundSecondary,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   titleSection: {
     flex: 1,
-    gap: 12,
+    gap: 10,
+    paddingTop: 4,
   },
   title: {
     color: Colors.dark.text,
-    fontSize: 24,
-    fontWeight: '700' as const,
+    fontSize: 22,
+    fontWeight: '800' as const,
+    letterSpacing: -0.3,
   },
   metaRow: {
     flexDirection: 'row',
-    gap: 16,
+    alignItems: 'center',
+    gap: 12,
   },
-  metaItem: {
+  ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  ratingValue: {
+    color: '#FBBF24',
+    fontSize: 14,
+    fontWeight: '700' as const,
   },
   metaText: {
     color: Colors.dark.textSecondary,
-    fontSize: 14,
+    fontSize: 13,
   },
   actions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   actionButton: {
-    width: 44,
-    height: 44,
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.dark.glass.background,
-    borderRadius: 22,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.dark.glass.border,
   },
   actionButtonActive: {
-    backgroundColor: Colors.dark.primary,
-    borderColor: Colors.dark.primary,
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    borderColor: 'rgba(59, 130, 246, 0.4)',
+  },
+  favoriteActive: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  genresScroll: {
+    marginBottom: 16,
   },
   genresContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
   },
   tagline: {
     color: Colors.dark.textSecondary,
-    fontSize: 16,
+    fontSize: 15,
     fontStyle: 'italic' as const,
     marginBottom: 16,
+    lineHeight: 22,
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
     color: Colors.dark.text,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700' as const,
     marginBottom: 12,
+    letterSpacing: 0.2,
   },
   overview: {
     color: Colors.dark.textSecondary,
     fontSize: 14,
     lineHeight: 22,
   },
-  castContainer: {
+  sectionHeader: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  castCard: {
-    width: 100,
-    gap: 4,
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.25)',
   },
-  castImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.dark.backgroundSecondary,
-  },
-  castName: {
-    color: Colors.dark.text,
-    fontSize: 12,
+  editButtonText: {
+    color: Colors.dark.primary,
+    fontSize: 13,
     fontWeight: '600' as const,
-    textAlign: 'center' as const,
   },
-  castCharacter: {
+  userReviewCard: {
+    backgroundColor: Colors.dark.card.background,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.dark.primary,
+    gap: 10,
+  },
+  userReviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  userReviewScore: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 3,
+  },
+  userReviewScoreNumber: {
+    fontSize: 28,
+    fontWeight: '800' as const,
+    color: Colors.dark.primary,
+  },
+  userReviewScoreLabel: {
+    fontSize: 16,
     color: Colors.dark.textSecondary,
-    fontSize: 11,
-    textAlign: 'center' as const,
+  },
+  userReviewDate: {
+    color: Colors.dark.textTertiary,
+    fontSize: 12,
+  },
+  userReviewText: {
+    color: Colors.dark.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  addReviewCard: {
+    backgroundColor: Colors.dark.card.background,
+    padding: 24,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    borderStyle: 'dashed' as const,
+    alignItems: 'center',
+    gap: 8,
+  },
+  addReviewText: {
+    color: Colors.dark.text,
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  addReviewSubtext: {
+    color: Colors.dark.textTertiary,
+    fontSize: 13,
   },
   videosContainer: {
-    gap: 12,
+    gap: 8,
   },
   videoCard: {
     flexDirection: 'row',
-    alignItems: 'center' as const,
+    alignItems: 'center',
     gap: 12,
-    backgroundColor: Colors.dark.surfaceLight,
-    padding: 16,
+    backgroundColor: Colors.dark.card.background,
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    borderColor: Colors.dark.card.border,
   },
   videoIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: `${Colors.dark.primary}20`,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   videoInfo: {
     flex: 1,
-    gap: 4,
+    gap: 3,
   },
   videoTitle: {
     color: Colors.dark.text,
@@ -791,31 +880,31 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   videoType: {
-    color: Colors.dark.textSecondary,
+    color: Colors.dark.textTertiary,
     fontSize: 12,
   },
   platformsContainer: {
-    gap: 12,
+    gap: 8,
   },
   platformCard: {
     flexDirection: 'row',
-    alignItems: 'center' as const,
+    alignItems: 'center',
     gap: 12,
-    backgroundColor: Colors.dark.surfaceLight,
-    padding: 16,
+    backgroundColor: Colors.dark.card.background,
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    borderColor: Colors.dark.card.border,
   },
   platformLogo: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     backgroundColor: Colors.dark.backgroundSecondary,
   },
   platformInfo: {
     flex: 1,
-    gap: 4,
+    gap: 3,
   },
   platformName: {
     color: Colors.dark.text,
@@ -823,159 +912,87 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   platformType: {
-    color: Colors.dark.textSecondary,
+    color: Colors.dark.textTertiary,
     fontSize: 12,
   },
-  platformButton: {
-    backgroundColor: Colors.dark.primary,
+  platformArrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoGrid: {
+    backgroundColor: Colors.dark.card.background,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.dark.card.border,
+    overflow: 'hidden',
+  },
+  infoItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.dark.border,
   },
-  platformButtonText: {
+  infoLabel: {
+    color: Colors.dark.textTertiary,
+    fontSize: 13,
+  },
+  infoValue: {
     color: Colors.dark.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
-  },
-  moreProvidersButton: {
-    flexDirection: 'row',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 8,
-    backgroundColor: Colors.dark.surfaceLight,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-    marginTop: 8,
-  },
-  moreProvidersText: {
-    color: Colors.dark.primary,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  productionContainer: {
-    gap: 12,
-  },
-  productionItem: {
-    flexDirection: 'row',
-    alignItems: 'center' as const,
-    gap: 12,
-    backgroundColor: Colors.dark.surfaceLight,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-  },
-  productionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: `${Colors.dark.primary}20`,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-  productionInfo: {
+    textAlign: 'right' as const,
     flex: 1,
-    gap: 4,
+    marginLeft: 16,
   },
-  productionLabel: {
-    color: Colors.dark.textSecondary,
-    fontSize: 12,
-  },
-  productionValue: {
-    color: Colors.dark.text,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  sectionHeader: {
+  castContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center' as const,
-    marginBottom: 12,
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center' as const,
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: `${Colors.dark.primary}20`,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.dark.primary,
-  },
-  editButtonText: {
-    color: Colors.dark.primary,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  userReviewCard: {
-    backgroundColor: Colors.dark.surfaceLight,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: Colors.dark.primary,
     gap: 12,
   },
-  userReviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center' as const,
+  castCard: {
+    width: 80,
+    gap: 6,
+    alignItems: 'center',
   },
-  userReviewScore: {
-    flexDirection: 'row',
-    alignItems: 'baseline' as const,
-    gap: 4,
-  },
-  userReviewScoreNumber: {
-    fontSize: 32,
-    fontWeight: '700' as const,
-    color: Colors.dark.primary,
-  },
-  userReviewScoreLabel: {
-    fontSize: 18,
-    color: Colors.dark.textSecondary,
-  },
-  userReviewDate: {
-    color: Colors.dark.textSecondary,
-    fontSize: 12,
-  },
-  userReviewText: {
-    color: Colors.dark.text,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  addReviewCard: {
-    backgroundColor: Colors.dark.surfaceLight,
-    padding: 24,
-    borderRadius: 12,
+  castImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.dark.backgroundSecondary,
     borderWidth: 2,
     borderColor: Colors.dark.border,
-    borderStyle: 'dashed' as const,
-    alignItems: 'center' as const,
-    gap: 8,
   },
-  addReviewText: {
+  castName: {
     color: Colors.dark.text,
-    fontSize: 16,
+    fontSize: 11,
     fontWeight: '600' as const,
+    textAlign: 'center' as const,
   },
-  addReviewSubtext: {
-    color: Colors.dark.textSecondary,
-    fontSize: 14,
+  castCharacter: {
+    color: Colors.dark.textTertiary,
+    fontSize: 10,
+    textAlign: 'center' as const,
+  },
+  bottomSpacer: {
+    height: 40,
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end' as const,
+    justifyContent: 'flex-end',
   },
   modalBackdrop: {
-    position: 'absolute' as const,
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
   },
   reviewModalContent: {
     backgroundColor: Colors.dark.backgroundSecondary,
@@ -983,68 +1000,78 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     maxHeight: '80%',
   },
+  reviewModalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.dark.border,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 6,
+  },
   reviewModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center' as const,
-    padding: 20,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: Colors.dark.border,
   },
   reviewModalTitle: {
     color: Colors.dark.text,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700' as const,
   },
   reviewModalClose: {
-    color: Colors.dark.text,
-    fontSize: 24,
+    color: Colors.dark.textSecondary,
+    fontSize: 22,
   },
   reviewModalBody: {
     padding: 20,
-    gap: 20,
+    gap: 16,
   },
   reviewModalLabel: {
     color: Colors.dark.text,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600' as const,
   },
   ratingNumberContainer: {
-    alignItems: 'center' as const,
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: 8,
   },
   ratingNumber: {
-    fontSize: 64,
-    fontWeight: '700' as const,
+    fontSize: 56,
+    fontWeight: '800' as const,
     color: Colors.dark.primary,
   },
   ratingLabel: {
-    fontSize: 24,
+    fontSize: 20,
     color: Colors.dark.textSecondary,
-    marginTop: -8,
+    marginTop: -6,
   },
   ratingSelector: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center' as const,
+    justifyContent: 'center',
     gap: 8,
   },
   ratingButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: Colors.dark.surfaceLight,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: Colors.dark.border,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   ratingButtonActive: {
     backgroundColor: Colors.dark.primary,
     borderColor: Colors.dark.primary,
   },
   ratingButtonText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700' as const,
     color: Colors.dark.textSecondary,
   },
@@ -1054,25 +1081,25 @@ const styles = StyleSheet.create({
   reviewInput: {
     backgroundColor: Colors.dark.surfaceLight,
     borderRadius: 12,
-    padding: 16,
+    padding: 14,
     color: Colors.dark.text,
     fontSize: 14,
-    minHeight: 120,
+    minHeight: 100,
     borderWidth: 1,
     borderColor: Colors.dark.border,
   },
   saveReviewButton: {
-    backgroundColor: Colors.dark.primary,
-    paddingVertical: 16,
+    backgroundColor: Colors.dark.accent,
+    paddingVertical: 15,
     borderRadius: 12,
-    alignItems: 'center' as const,
+    alignItems: 'center',
   },
   saveReviewButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   saveReviewButtonText: {
-    color: Colors.dark.text,
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
   },
 });

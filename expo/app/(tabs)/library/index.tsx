@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   },
   completionBar: {
     height: '100%',
-    backgroundColor: Colors.dark.primary,
+    backgroundColor: Colors.dark.accent,
     borderRadius: 4,
   },
   completionText: {
@@ -548,8 +548,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.dark.border,
   },
   tabActive: {
-    backgroundColor: Colors.dark.primary,
-    borderColor: Colors.dark.primary,
+    backgroundColor: Colors.dark.accent,
+    borderColor: Colors.dark.accent,
   },
   tabText: {
     color: Colors.dark.textSecondary,
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     alignItems: 'center' as const,
   },
   tabBadgeActive: {
-    backgroundColor: Colors.dark.primaryLight,
+    backgroundColor: 'rgba(255,255,255,0.25)',
   },
   tabBadgeText: {
     color: Colors.dark.textSecondary,
@@ -621,10 +621,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   emptyButton: {
-    backgroundColor: Colors.dark.primary,
+    backgroundColor: Colors.dark.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 24,
+    borderRadius: 12,
   },
   emptyButtonText: {
     color: Colors.dark.text,
@@ -657,8 +657,8 @@ const styles = StyleSheet.create({
     position: 'relative' as const,
   },
   headerButtonActive: {
-    backgroundColor: Colors.dark.primary,
-    borderColor: Colors.dark.primary,
+    backgroundColor: Colors.dark.accent,
+    borderColor: Colors.dark.accent,
   },
   filterBadge: {
     position: 'absolute' as const,
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center' as const,
     gap: 6,
-    backgroundColor: Colors.dark.primary,
+    backgroundColor: Colors.dark.accent,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -724,10 +724,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContent: {
-    backgroundColor: Colors.dark.backgroundSecondary,
+    backgroundColor: Colors.dark.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    borderBottomWidth: 0,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -751,7 +754,7 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.dark.border,
   },
   applyButton: {
-    backgroundColor: Colors.dark.primary,
+    backgroundColor: Colors.dark.accent,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center' as const,
@@ -794,8 +797,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.dark.border,
   },
   genreChipActive: {
-    backgroundColor: Colors.dark.primary,
-    borderColor: Colors.dark.primary,
+    backgroundColor: Colors.dark.accent,
+    borderColor: Colors.dark.accent,
   },
   genreChipText: {
     color: Colors.dark.textSecondary,
@@ -856,7 +859,7 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   smartListsButton: {
-    backgroundColor: Colors.dark.primary,
+    backgroundColor: Colors.dark.accent,
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,

@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Star, Bookmark, BookmarkCheck } from 'lucide-react-native';
+import { Star, Heart } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, Text, View, Pressable, Dimensions } from 'react-native';
 import Colors from '@/constants/colors';
@@ -25,20 +25,19 @@ export default function MovieCard({
   showRating = true,
   showWatchlistButton = true
 }: MovieCardProps) {
-  const { isInWatchlist, addInteraction } = useLibrary();
-  const inWatchlist = isInWatchlist(movie.id, movie.type || 'movie');
+  const { isFavorite, addInteraction } = useLibrary();
+  const favorite = isFavorite(movie.id, movie.type || 'movie');
 
-  const handleToggleWatchlist = (e: any) => {
+  const handleToggleFavorite = (e: any) => {
     e.stopPropagation();
-    if (inWatchlist) {
+    if (favorite) {
       void addInteraction(movie.id, movie.type || 'movie', 'watched');
     } else {
-      void addInteraction(movie.id, movie.type || 'movie', 'watchlist');
+      void addInteraction(movie.id, movie.type || 'movie', 'favorite');
     }
   };
+
   const imageUrl = movie.posterPath || 'https://via.placeholder.com/500x750?text=No+Image';
-  const releaseYear = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : null;
-  const year = releaseYear && !isNaN(releaseYear) ? releaseYear : null;
   const rating = typeof movie.voteAverage === 'number' && !isNaN(movie.voteAverage) ? movie.voteAverage.toFixed(1) : '0.0';
 
   return (
@@ -51,34 +50,34 @@ export default function MovieCard({
           source={{ uri: imageUrl }}
           style={styles.image}
           contentFit="cover"
-          transition={300}
+          transition={200}
         />
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.8)']}
+          colors={['transparent', 'transparent', 'rgba(0,0,0,0.85)']}
+          locations={[0, 0.5, 1]}
           style={styles.gradient}
         />
         {showRating && (
           <View style={styles.ratingBadge}>
-            <Star size={12} color={Colors.dark.warning} fill={Colors.dark.warning} />
+            <Star size={10} color="#FBBF24" fill="#FBBF24" />
             <Text style={styles.ratingText}>{rating}</Text>
           </View>
         )}
         {showWatchlistButton && (
           <Pressable 
-            style={[styles.watchlistButton, inWatchlist && styles.watchlistButtonActive]} 
-            onPress={handleToggleWatchlist}
+            style={[styles.favoriteButton, favorite && styles.favoriteButtonActive]} 
+            onPress={handleToggleFavorite}
           >
-            {inWatchlist ? (
-              <BookmarkCheck size={16} color={Colors.dark.text} />
-            ) : (
-              <Bookmark size={16} color={Colors.dark.text} />
-            )}
+            <Heart 
+              size={14} 
+              color={favorite ? '#EF4444' : 'rgba(255,255,255,0.8)'} 
+              fill={favorite ? '#EF4444' : 'transparent'}
+            />
           </Pressable>
         )}
-      </View>
-      <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={2}>{movie.title}</Text>
-        {year !== null ? <Text style={styles.year}>{String(year)}</Text> : null}
+        <View style={styles.bottomInfo}>
+          <Text style={styles.title} numberOfLines={1}>{movie.title}</Text>
+        </View>
       </View>
     </Pressable>
   );
@@ -86,12 +85,12 @@ export default function MovieCard({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   imageContainer: {
     width: '100%',
     aspectRatio: 2 / 3,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: Colors.dark.backgroundSecondary,
   },
@@ -104,53 +103,56 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '50%',
+    height: '60%',
   },
   ratingBadge: {
     position: 'absolute',
     top: 8,
-    right: 8,
+    left: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 3,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   ratingText: {
-    color: Colors.dark.text,
-    fontSize: 12,
-    fontWeight: '600' as const,
+    color: '#FBBF24',
+    fontSize: 11,
+    fontWeight: '700' as const,
   },
-  info: {
-    marginTop: 8,
-    gap: 2,
+  bottomInfo: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
   },
   title: {
     color: Colors.dark.text,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600' as const,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
-  year: {
-    color: Colors.dark.textSecondary,
-    fontSize: 12,
-  },
-  watchlistButton: {
+  favoriteButton: {
     position: 'absolute',
     top: 8,
-    left: 8,
-    width: 32,
-    height: 32,
+    right: 8,
+    width: 30,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
-  watchlistButtonActive: {
-    backgroundColor: Colors.dark.primary,
-    borderColor: Colors.dark.primary,
+  favoriteButtonActive: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: 'rgba(239, 68, 68, 0.4)',
   },
 });

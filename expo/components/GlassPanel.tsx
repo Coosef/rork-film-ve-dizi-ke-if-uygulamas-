@@ -9,7 +9,7 @@ interface GlassPanelProps {
   intensity?: number;
 }
 
-export default function GlassPanel({ children, style, intensity = 20 }: GlassPanelProps) {
+export default function GlassPanel({ children, style, intensity = 25 }: GlassPanelProps) {
   if (Platform.OS === 'web') {
     return (
       <View style={[styles.webGlass, style]}>
@@ -19,7 +19,7 @@ export default function GlassPanel({ children, style, intensity = 20 }: GlassPan
   }
 
   return (
-    <BlurView intensity={intensity} style={[styles.glass, style]}>
+    <BlurView intensity={intensity} tint="dark" style={[styles.glass, style]}>
       {children}
     </BlurView>
   );
@@ -28,14 +28,14 @@ export default function GlassPanel({ children, style, intensity = 20 }: GlassPan
 const styles = StyleSheet.create({
   glass: {
     backgroundColor: Colors.dark.glass.background,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.dark.glass.border,
     overflow: 'hidden',
   },
   webGlass: {
     backgroundColor: Colors.dark.glass.background,
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.dark.glass.border,
     overflow: 'hidden',

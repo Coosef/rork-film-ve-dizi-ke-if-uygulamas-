@@ -145,12 +145,13 @@ function RootLayoutNav() {
       screenOptions={{ 
         headerBackTitle: t('common.back'),
         headerStyle: {
-          backgroundColor: Colors.dark.backgroundSecondary,
+          backgroundColor: Colors.dark.background,
         },
         headerTintColor: Colors.dark.text,
         headerTitleStyle: {
           fontWeight: '700' as const,
         },
+        headerShadowVisible: false,
       }}
     >
       <Stack.Screen name="auth" options={{ headerShown: false }} />
@@ -248,7 +249,7 @@ const offlineStyles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.dark.warning,
+    backgroundColor: 'rgba(245, 158, 11, 0.9)',
     flexDirection: 'row',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -278,8 +279,8 @@ const modalStyles = StyleSheet.create({
     padding: 32,
     width: '100%',
     maxWidth: 400,
-    borderWidth: 2,
-    borderColor: Colors.dark.accent,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
   },
   iconContainer: {
     alignItems: 'center',

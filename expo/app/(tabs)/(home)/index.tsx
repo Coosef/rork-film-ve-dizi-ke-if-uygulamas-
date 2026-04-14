@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Play, Plus, Info, Search, Clock, Sparkles } from 'lucide-react-native';
-import React, { useState, useMemo } from 'react';
+import { Play, Plus, Search, Clock, Sparkles, TrendingUp } from 'lucide-react-native';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,6 +13,7 @@ import {
   Dimensions,
   TextInput,
   RefreshControl,
+  Animated,
 } from 'react-native';
 
 import Colors from '@/constants/colors';
@@ -31,9 +32,9 @@ import {
   getMovieDetailsSafe,
 } from '@/services/tmdb';
 import { MediaItem, Movie } from '@/types/tmdb';
-// import { getAIRecommendations } from '@/services/ai-recommendations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const HERO_HEIGHT = SCREEN_WIDTH * 1.3;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -42,6 +43,9 @@ export default function HomeScreen() {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const heroFade = useRef(new Animated.Value(1)).current;
+  const searchFocused = useRef(false);
 
   const trendingQuery = useQuery({
     queryKey: ['trending'],
@@ -80,7 +84,26 @@ export default function HomeScreen() {
   });
 
   const heroShows = (trendingQuery.data?.results || []).slice(0, 5);
-  const currentHero = heroShows[0];
+  const currentHero = heroShows[heroIndex] || heroShows[0];
+
+  useEffect(() => {
+    if (heroShows.length <= 1) return;
+    const interval = setInterval(() => {
+      Animated.timing(heroFade, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }).start(() => {
+        setHeroIndex(prev => (prev + 1) % heroShows.length);
+        Animated.timing(heroFade, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [heroShows.length, heroFade]);
 
   const watchingInteractions = useMemo(() => {
     return getInteractionsByType('watching');
@@ -234,6 +257,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
+        <View style={styles.loadingDot} />
         <Text style={styles.loadingText}>{t('common.loading')}</Text>
       </View>
     );
@@ -253,18 +277,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Search size={20} color={Colors.dark.textSecondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t('home.searchPlaceholder')}
-            placeholderTextColor={Colors.dark.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-      </View>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -273,12 +285,29 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={Colors.dark.primary}
+            tintColor={Colors.dark.accent}
           />
         }
       >
         {isSearching ? (
           <View style={styles.searchResults}>
+            <View style={styles.searchContainer}>
+              <View style={styles.searchInputContainer}>
+                <Search size={18} color={Colors.dark.textSecondary} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder={t('home.searchPlaceholder')}
+                  placeholderTextColor={Colors.dark.textTertiary}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+                {searchQuery.length > 0 && (
+                  <Pressable onPress={() => setSearchQuery('')}>
+                    <Text style={styles.searchClear}>✕</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
             <Text style={styles.searchTitle}>{t('home.searchResults')}</Text>
             {searchQuery_data.isLoading ? (
               <Text style={styles.loadingText}>{t('home.searching')}</Text>
@@ -294,174 +323,188 @@ export default function HomeScreen() {
           </View>
         ) : (
           <>
-        {currentHero && (
-          <View style={styles.heroContainer}>
-            <Image
-              source={{ uri: getMovieImageUrl(currentHero.backdrop_path, 'original') }}
-              style={styles.heroImage}
-              contentFit="cover"
-            />
-            <LinearGradient
-              colors={['transparent', Colors.dark.background]}
-              style={styles.heroGradient}
-            />
-            <View style={styles.heroContent}>
-              <View style={styles.heroInfo}>
-                <Text style={styles.heroTitle}>{currentHero.title}</Text>
-                <Text style={styles.heroOverview} numberOfLines={3}>
-                  {currentHero.overview || ''}
-                </Text>
-                <View style={styles.heroActions}>
-                  <Pressable style={styles.playButton} onPress={handlePlayTrailer}>
-                    <Play size={20} color={Colors.dark.background} fill={Colors.dark.background} />
-                    <Text style={styles.playButtonText}>{t('home.watchTrailer')}</Text>
-                  </Pressable>
-                  <Pressable style={styles.iconButton} onPress={handleAddToWatchlist}>
-                    <Plus size={24} color={Colors.dark.text} />
-                  </Pressable>
-                  <Pressable 
-                    style={styles.iconButton}
-                    onPress={() => handleShowPress(convertMovieToMediaItem(currentHero))}
-                  >
-                    <Info size={24} color={Colors.dark.text} />
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {continueWatchingMovies.length > 0 && (
-          <View style={styles.continueWatchingSection}>
-            <Text style={styles.continueWatchingTitle}>{t('home.continueWatching')}</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.continueWatchingScroll}
-            >
-              {continueWatchingMovies.map((item: any) => {
-                const { movie, interaction } = item;
-                const progress = interaction.watchProgress;
-                const progressPercentage = progress
-                  ? (progress.watchedEpisodes / progress.totalEpisodes) * 100
-                  : 0;
-
-                const imageUrl = getMovieImageUrl(movie.poster_path, 'w500');
-                console.log('[ContinueWatching] Rendering card for:', movie.title, 'Image URL:', imageUrl);
-
-                return (
-                  <Pressable
-                    key={movie.id}
-                    style={styles.continueWatchingCard}
-                    onPress={() => router.push(`/movie/${movie.id}` as any)}
-                  >
-                    {movie.poster_path ? (
-                      <Image
-                        source={{ uri: imageUrl }}
-                        style={styles.continueWatchingImage}
-                        contentFit="cover"
-                      />
-                    ) : (
-                      <View style={[styles.continueWatchingImage, { backgroundColor: Colors.dark.surfaceLight }]} />
-                    )}
-                    <LinearGradient
-                      colors={['transparent', 'rgba(0, 0, 0, 0.9)']}
-                      style={styles.continueWatchingGradient}
+            {currentHero && (
+              <Animated.View style={[styles.heroContainer, { opacity: heroFade }]}>
+                <Image
+                  source={{ uri: getMovieImageUrl(currentHero.backdrop_path, 'original') }}
+                  style={styles.heroImage}
+                  contentFit="cover"
+                />
+                <LinearGradient
+                  colors={['rgba(11,15,26,0.1)', 'rgba(11,15,26,0.4)', 'rgba(11,15,26,0.95)', Colors.dark.background]}
+                  locations={[0, 0.4, 0.75, 1]}
+                  style={styles.heroGradient}
+                />
+                <View style={styles.heroSearchOverlay}>
+                  <View style={styles.searchInputContainer}>
+                    <Search size={18} color={Colors.dark.textSecondary} />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder={t('home.searchPlaceholder')}
+                      placeholderTextColor={Colors.dark.textTertiary}
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
                     />
-                    <View style={styles.continueWatchingContent}>
-                      <View style={styles.continueWatchingBadge}>
-                        <Clock size={12} color={Colors.dark.primary} />
-                        <Text style={styles.continueWatchingBadgeText}>{t('home.continue')}</Text>
-                      </View>
-                      <Text style={styles.continueWatchingShowTitle} numberOfLines={2}>
-                        {movie.title}
-                      </Text>
-                      <View style={styles.continueWatchingProgress}>
-                        <View style={styles.continueWatchingProgressBar}>
-                          <View
-                            style={[
-                              styles.continueWatchingProgressFill,
-                              { width: `${progressPercentage}%` },
-                            ]}
-                          />
-                        </View>
-                        <Text style={styles.continueWatchingProgressText}>
-                          {progress?.watchedEpisodes || 0}/{progress?.totalEpisodes || 0}
-                        </Text>
-                      </View>
+                  </View>
+                </View>
+                <View style={styles.heroContent}>
+                  <View style={styles.heroBadge}>
+                    <TrendingUp size={12} color={Colors.dark.accent} />
+                    <Text style={styles.heroBadgeText}>{t('home.trending')}</Text>
+                  </View>
+                  <Text style={styles.heroTitle}>{currentHero.title}</Text>
+                  <Text style={styles.heroOverview} numberOfLines={2}>
+                    {currentHero.overview || ''}
+                  </Text>
+                  <View style={styles.heroActions}>
+                    <Pressable style={styles.playButton} onPress={handlePlayTrailer}>
+                      <Play size={18} color="#FFFFFF" fill="#FFFFFF" />
+                      <Text style={styles.playButtonText}>{t('home.watchTrailer')}</Text>
+                    </Pressable>
+                    <Pressable style={styles.iconButton} onPress={handleAddToWatchlist}>
+                      <Plus size={22} color={Colors.dark.text} />
+                    </Pressable>
+                  </View>
+                  {heroShows.length > 1 && (
+                    <View style={styles.heroDots}>
+                      {heroShows.map((_: any, i: number) => (
+                        <View
+                          key={i}
+                          style={[styles.heroDot, i === heroIndex && styles.heroDotActive]}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              </Animated.View>
+            )}
+
+            {continueWatchingMovies.length > 0 && (
+              <View style={styles.continueWatchingSection}>
+                <View style={styles.sectionHeader}>
+                  <Clock size={18} color={Colors.dark.primary} />
+                  <Text style={styles.sectionTitle}>{t('home.continueWatching')}</Text>
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.continueWatchingScroll}
+                >
+                  {continueWatchingMovies.map((item: any) => {
+                    const { movie, interaction } = item;
+                    const progress = interaction.watchProgress;
+                    const progressPercentage = progress
+                      ? (progress.watchedEpisodes / progress.totalEpisodes) * 100
+                      : 0;
+
+                    const imageUrl = getMovieImageUrl(movie.poster_path, 'w500');
+
+                    return (
                       <Pressable
-                        style={styles.continueWatchingButton}
+                        key={movie.id}
+                        style={styles.continueWatchingCard}
                         onPress={() => router.push(`/movie/${movie.id}` as any)}
                       >
-                        <Play
-                          size={16}
-                          color={Colors.dark.background}
-                          fill={Colors.dark.background}
+                        {movie.poster_path ? (
+                          <Image
+                            source={{ uri: imageUrl }}
+                            style={styles.continueWatchingImage}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View style={[styles.continueWatchingImage, { backgroundColor: Colors.dark.surfaceLight }]} />
+                        )}
+                        <LinearGradient
+                          colors={['transparent', 'rgba(0, 0, 0, 0.95)']}
+                          style={styles.continueWatchingGradient}
                         />
-                        <Text style={styles.continueWatchingButtonText}>{t('home.continue')}</Text>
+                        <View style={styles.continueWatchingContent}>
+                          <Text style={styles.continueWatchingShowTitle} numberOfLines={2}>
+                            {movie.title}
+                          </Text>
+                          <View style={styles.continueWatchingProgress}>
+                            <View style={styles.continueWatchingProgressBar}>
+                              <View
+                                style={[
+                                  styles.continueWatchingProgressFill,
+                                  { width: `${progressPercentage}%` },
+                                ]}
+                              />
+                            </View>
+                            <Text style={styles.continueWatchingProgressText}>
+                              {progress?.watchedEpisodes || 0}/{progress?.totalEpisodes || 0}
+                            </Text>
+                          </View>
+                          <Pressable
+                            style={styles.continueWatchingButton}
+                            onPress={() => router.push(`/movie/${movie.id}` as any)}
+                          >
+                            <Play size={14} color="#FFFFFF" fill="#FFFFFF" />
+                            <Text style={styles.continueWatchingButtonText}>{t('home.continue')}</Text>
+                          </Pressable>
+                        </View>
                       </Pressable>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-
-        <View style={styles.shelvesContainer}>
-          {(!trendingQuery.data?.results?.length && !popularQuery.data?.results?.length) && (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>İçerik yüklenemedi</Text>
-              <Text style={styles.emptyDescription}>Şu anda içerik gösterilemiyor. İnternet bağlantınızı kontrol edin ve tekrar deneyin.</Text>
-              <Pressable style={styles.retryButton} onPress={() => void handleRefresh()}>
-                <Text style={styles.retryButtonText}>Tekrar Dene</Text>
-              </Pressable>
-            </View>
-          )}
-          {recommendedMovies.length > 0 && (
-            <View>
-              <View style={styles.shelfHeader}>
-                <View style={styles.shelfTitleContainer}>
-                  <Sparkles size={20} color={Colors.dark.primary} />
-                  <Text style={styles.shelfTitle}>{t('home.forYou')}</Text>
-                </View>
+                    );
+                  })}
+                </ScrollView>
               </View>
-              <MovieShelf
-                title=""
-                movies={recommendedMovies.filter(Boolean).map((movie: Movie) => convertMovieToMediaItem(movie))}
-                onMoviePress={handleShowPress}
-              />
+            )}
+
+            <View style={styles.shelvesContainer}>
+              {(!trendingQuery.data?.results?.length && !popularQuery.data?.results?.length) && (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyTitle}>İçerik yüklenemedi</Text>
+                  <Text style={styles.emptyDescription}>Şu anda içerik gösterilemiyor. İnternet bağlantınızı kontrol edin ve tekrar deneyin.</Text>
+                  <Pressable style={styles.retryButton} onPress={() => void handleRefresh()}>
+                    <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+                  </Pressable>
+                </View>
+              )}
+              {recommendedMovies.length > 0 && (
+                <View>
+                  <View style={styles.shelfHeader}>
+                    <View style={styles.shelfTitleContainer}>
+                      <Sparkles size={18} color={Colors.dark.primary} />
+                      <Text style={styles.shelfTitleText}>{t('home.forYou')}</Text>
+                    </View>
+                  </View>
+                  <MovieShelf
+                    title=""
+                    movies={recommendedMovies.filter(Boolean).map((movie: Movie) => convertMovieToMediaItem(movie))}
+                    onMoviePress={handleShowPress}
+                  />
+                </View>
+              )}
+              {newReleasesQuery.data && 'results' in newReleasesQuery.data && newReleasesQuery.data.results.length > 0 && (
+                <MovieShelf
+                  title={t('home.newReleases')}
+                  movies={newReleasesQuery.data.results.map(convertMovieToMediaItem)}
+                  onMoviePress={handleShowPress}
+                />
+              )}
+              {trendingQuery.data?.results && trendingQuery.data.results.length > 0 && (
+                <MovieShelf
+                  title={t('home.trending')}
+                  movies={trendingQuery.data.results.map(convertMovieToMediaItem)}
+                  onMoviePress={handleShowPress}
+                />
+              )}
+              {popularQuery.data?.results && popularQuery.data.results.length > 0 && (
+                <MovieShelf
+                  title={t('home.popular')}
+                  movies={popularQuery.data.results.map(convertMovieToMediaItem)}
+                  onMoviePress={handleShowPress}
+                />
+              )}
+              {topRatedQuery.data?.results && topRatedQuery.data.results.length > 0 && (
+                <MovieShelf
+                  title={t('home.topRated')}
+                  movies={topRatedQuery.data.results.map(convertMovieToMediaItem)}
+                  onMoviePress={handleShowPress}
+                />
+              )}
+              <View style={styles.bottomSpacer} />
             </View>
-          )}
-          {newReleasesQuery.data && 'results' in newReleasesQuery.data && newReleasesQuery.data.results.length > 0 && (
-            <MovieShelf
-              title={t('home.newReleases')}
-              movies={newReleasesQuery.data.results.map(convertMovieToMediaItem)}
-              onMoviePress={handleShowPress}
-            />
-          )}
-          {trendingQuery.data?.results && trendingQuery.data.results.length > 0 && (
-            <MovieShelf
-              title={t('home.trending')}
-              movies={trendingQuery.data.results.map(convertMovieToMediaItem)}
-              onMoviePress={handleShowPress}
-            />
-          )}
-          {popularQuery.data?.results && popularQuery.data.results.length > 0 && (
-            <MovieShelf
-              title={t('home.popular')}
-              movies={popularQuery.data.results.map(convertMovieToMediaItem)}
-              onMoviePress={handleShowPress}
-            />
-          )}
-          {topRatedQuery.data?.results && topRatedQuery.data.results.length > 0 && (
-            <MovieShelf
-              title={t('home.topRated')}
-              movies={topRatedQuery.data.results.map(convertMovieToMediaItem)}
-              onMoviePress={handleShowPress}
-            />
-          )}
-        </View>
           </>
         )}
       </ScrollView>
@@ -479,17 +522,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.dark.background,
+    gap: 12,
+  },
+  loadingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.dark.accent,
+    marginBottom: 8,
   },
   loadingText: {
-    color: Colors.dark.text,
-    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    fontSize: 14,
   },
   scrollView: {
     flex: 1,
   },
   heroContainer: {
     width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH * 1.2,
+    height: HERO_HEIGHT,
     position: 'relative',
   },
   heroImage: {
@@ -501,38 +552,65 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '60%',
+    height: '100%',
+  },
+  heroSearchOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 56,
   },
   heroContent: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-  },
-  heroInfo: {
     padding: 16,
-    gap: 12,
+    paddingBottom: 20,
+    gap: 10,
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  heroBadgeText: {
+    color: Colors.dark.accent,
+    fontSize: 11,
+    fontWeight: '700' as const,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
   },
   heroTitle: {
     color: Colors.dark.text,
-    fontSize: 32,
-    fontWeight: '700' as const,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    fontSize: 30,
+    fontWeight: '800' as const,
+    textShadowColor: 'rgba(0, 0, 0, 0.9)',
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowRadius: 6,
+    letterSpacing: -0.5,
   },
   heroOverview: {
-    color: Colors.dark.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    lineHeight: 19,
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3,
   },
   heroActions: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    gap: 10,
+    marginTop: 4,
   },
   playButton: {
     flex: 1,
@@ -540,13 +618,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.dark.text,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: Colors.dark.accent,
+    paddingVertical: 13,
+    borderRadius: 12,
   },
   playButtonText: {
-    color: Colors.dark.background,
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '700' as const,
   },
   iconButton: {
@@ -555,88 +633,65 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.dark.glass.background,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.dark.glass.border,
   },
-  shelvesContainer: {
-    paddingVertical: 24,
-  },
-  shelfHeader: {
+  heroDots: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center' as const,
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    alignSelf: 'center',
+    gap: 6,
+    marginTop: 4,
   },
-  shelfTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center' as const,
-    gap: 8,
+  heroDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.25)',
   },
-  shelfTitle: {
-    color: Colors.dark.text,
-    fontSize: 20,
-    fontWeight: '700' as const,
-  },
-  aiPoweredBadge: {
-    backgroundColor: Colors.dark.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  aiPoweredText: {
-    color: Colors.dark.text,
-    fontSize: 10,
-    fontWeight: '700' as const,
-  },
-  toggleAIButton: {
-    backgroundColor: Colors.dark.surfaceLight,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-  },
-  toggleAIText: {
-    color: Colors.dark.text,
-    fontSize: 12,
-    fontWeight: '600' as const,
+  heroDotActive: {
+    backgroundColor: Colors.dark.accent,
+    width: 20,
   },
   searchContainer: {
     paddingHorizontal: 16,
     paddingTop: 60,
     paddingBottom: 12,
-    backgroundColor: Colors.dark.background,
   },
   searchInputContainer: {
     flexDirection: 'row',
-    alignItems: 'center' as const,
-    gap: 12,
-    backgroundColor: Colors.dark.surfaceLight,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: Colors.dark.glass.background,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    borderColor: Colors.dark.glass.border,
   },
   searchInput: {
     flex: 1,
     color: Colors.dark.text,
+    fontSize: 15,
+  },
+  searchClear: {
+    color: Colors.dark.textSecondary,
     fontSize: 16,
+    paddingHorizontal: 4,
   },
   searchResults: {
-    padding: 16,
+    paddingTop: 0,
   },
   searchTitle: {
     color: Colors.dark.text,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700' as const,
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
   emptyText: {
     color: Colors.dark.textSecondary,
-    fontSize: 16,
+    fontSize: 14,
     textAlign: 'center' as const,
     marginTop: 32,
   },
@@ -654,15 +709,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   retryButton: {
-    backgroundColor: Colors.dark.primary,
-    paddingHorizontal: 24,
+    backgroundColor: Colors.dark.accent,
+    paddingHorizontal: 28,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   retryButtonText: {
-    color: Colors.dark.text,
-    fontSize: 16,
-    fontWeight: '600' as const,
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700' as const,
   },
   emptyContainer: {
     flex: 1,
@@ -685,28 +740,56 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 20,
   },
-  continueWatchingSection: {
-    marginBottom: 24,
+  shelvesContainer: {
+    paddingTop: 8,
   },
-  continueWatchingTitle: {
-    color: Colors.dark.text,
-    fontSize: 24,
-    fontWeight: '700' as const,
+  shelfHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 14,
+  },
+  shelfTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  shelfTitleText: {
+    color: Colors.dark.text,
+    fontSize: 18,
+    fontWeight: '700' as const,
+    letterSpacing: 0.3,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  sectionTitle: {
+    color: Colors.dark.text,
+    fontSize: 18,
+    fontWeight: '700' as const,
+    letterSpacing: 0.3,
+  },
+  continueWatchingSection: {
+    marginBottom: 8,
+    marginTop: -4,
   },
   continueWatchingScroll: {
     paddingHorizontal: 16,
-    gap: 16,
+    gap: 12,
   },
   continueWatchingCard: {
-    width: 280,
-    height: 380,
-    borderRadius: 16,
+    width: 160,
+    height: 240,
+    borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: Colors.dark.surfaceLight,
+    backgroundColor: Colors.dark.card.background,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    borderColor: Colors.dark.card.border,
   },
   continueWatchingImage: {
     width: '100%',
@@ -718,72 +801,58 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '70%',
+    height: '65%',
   },
   continueWatchingContent: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    gap: 12,
-  },
-  continueWatchingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center' as const,
-    gap: 6,
-    backgroundColor: `${Colors.dark.primary}30`,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    alignSelf: 'flex-start' as const,
-    borderWidth: 1,
-    borderColor: Colors.dark.primary,
-  },
-  continueWatchingBadgeText: {
-    color: Colors.dark.primary,
-    fontSize: 11,
-    fontWeight: '700' as const,
+    padding: 10,
+    gap: 8,
   },
   continueWatchingShowTitle: {
     color: Colors.dark.text,
-    fontSize: 20,
+    fontSize: 14,
     fontWeight: '700' as const,
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   continueWatchingProgress: {
-    gap: 8,
+    gap: 4,
   },
   continueWatchingProgressBar: {
-    height: 6,
-    backgroundColor: Colors.dark.backgroundSecondary,
-    borderRadius: 3,
+    height: 3,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 2,
     overflow: 'hidden',
   },
   continueWatchingProgressFill: {
     height: '100%',
-    backgroundColor: Colors.dark.primary,
-    borderRadius: 3,
+    backgroundColor: Colors.dark.accent,
+    borderRadius: 2,
   },
   continueWatchingProgressText: {
     color: Colors.dark.textSecondary,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600' as const,
   },
   continueWatchingButton: {
     flexDirection: 'row',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 8,
-    backgroundColor: Colors.dark.text,
-    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.dark.accent,
+    paddingVertical: 8,
     borderRadius: 8,
   },
   continueWatchingButtonText: {
-    color: Colors.dark.background,
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '700' as const,
+  },
+  bottomSpacer: {
+    height: 100,
   },
 });
