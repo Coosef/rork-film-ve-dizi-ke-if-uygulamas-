@@ -4,7 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Plus, Check, Heart, Star, Clock, Calendar, Play, ExternalLink, MessageCircle, ThumbsUp, Building2, Globe, Edit3 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import YouTubePlayer from '@/components/YouTubePlayer';
 import {
   StyleSheet,
   Text,
@@ -40,6 +41,7 @@ export default function MovieDetailScreen() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
+  const [playerVideo, setPlayerVideo] = useState<{ key: string; name: string } | null>(null);
 
   const movieId = parseInt(id || '0', 10);
 
@@ -149,9 +151,9 @@ export default function MovieDetailScreen() {
 
   const handlePlayTrailer = () => {
     if (trailers.length > 0) {
-      Linking.openURL(`https://www.youtube.com/watch?v=${trailers[0].key}`);
+      setPlayerVideo({ key: trailers[0].key, name: trailers[0].name });
     } else if (videos.length > 0) {
-      Linking.openURL(`https://www.youtube.com/watch?v=${videos[0].key}`);
+      setPlayerVideo({ key: videos[0].key, name: videos[0].name });
     }
   };
 
@@ -302,7 +304,7 @@ export default function MovieDetailScreen() {
                   <Pressable
                     key={`video-${video.id}-${index}`}
                     style={styles.videoCard}
-                    onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${video.key}`)}
+                    onPress={() => setPlayerVideo({ key: video.key, name: video.name })}
                   >
                     <View style={styles.videoIcon}>
                       <Play size={24} color={Colors.dark.primary} />
@@ -595,6 +597,13 @@ export default function MovieDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      <YouTubePlayer
+        videoKey={playerVideo?.key ?? null}
+        videoTitle={playerVideo?.name}
+        visible={!!playerVideo}
+        onClose={() => setPlayerVideo(null)}
+      />
     </View>
   );
 }
