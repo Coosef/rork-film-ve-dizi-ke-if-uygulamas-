@@ -23,67 +23,20 @@ function YouTubePlayerContent({ videoKey }: { videoKey: string }) {
   if (Platform.OS === 'web') {
     return (
       <iframe
-        src={`https://www.youtube.com/embed/${videoKey}?autoplay=1&rel=0&modestbranding=1`}
+        src={`https://www.youtube.com/embed/${videoKey}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
         style={{ width: '100%', height: '100%', border: 'none' } as any}
-        allow="autoplay; encrypted-media"
+        allow="autoplay; encrypted-media; fullscreen"
         allowFullScreen
       />
     );
   }
 
   const WebView = require('react-native-webview').default;
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
-        #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-      </style>
-    </head>
-    <body>
-      <div id="player"></div>
-      <script>
-        var tag = document.createElement('script');
-        tag.src = 'https://www.youtube.com/iframe_api';
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-        var player;
-        function onYouTubeIframeAPIReady() {
-          player = new YT.Player('player', {
-            videoId: '${videoKey}',
-            playerVars: {
-              autoplay: 1,
-              playsinline: 1,
-              rel: 0,
-              modestbranding: 1,
-              controls: 1,
-              fs: 1,
-              origin: 'https://www.youtube.com'
-            },
-            events: {
-              onError: function(e) {
-                if (e.data === 150 || e.data === 101 || e.data === 153) {
-                  document.getElementById('player').innerHTML = 
-                    '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff;font-family:sans-serif;text-align:center;padding:20px;">' +
-                    '<div><p style="font-size:16px;margin-bottom:12px;">Bu video gömülü oynatmayı desteklemiyor</p>' +
-                    '<a href="https://www.youtube.com/watch?v=${videoKey}" style="color:#FF6B6B;font-size:14px;">YouTube\'da Aç</a></div></div>';
-                }
-              }
-            }
-          });
-        }
-      </script>
-    </body>
-    </html>
-  `;
+  const embedUrl = `https://www.youtube.com/embed/${videoKey}?autoplay=1&playsinline=1&rel=0&modestbranding=1&controls=1&fs=1`;
 
   return (
     <WebView
-      source={{ html }}
+      source={{ uri: embedUrl }}
       style={styles.webview}
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}
@@ -92,13 +45,20 @@ function YouTubePlayerContent({ videoKey }: { videoKey: string }) {
       allowsFullscreenVideo
       mixedContentMode="compatibility"
       originWhitelist={['*']}
-      userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
       startInLoadingState
       renderLoading={() => (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={Colors.dark.primary} />
         </View>
       )}
+      onError={(syntheticEvent: any) => {
+        const { nativeEvent } = syntheticEvent;
+        console.log('[YouTubePlayer] WebView error:', nativeEvent);
+      }}
+      onHttpError={(syntheticEvent: any) => {
+        const { nativeEvent } = syntheticEvent;
+        console.log('[YouTubePlayer] HTTP error:', nativeEvent.statusCode);
+      }}
     />
   );
 }
