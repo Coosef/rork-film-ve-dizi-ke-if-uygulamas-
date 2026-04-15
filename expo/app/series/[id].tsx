@@ -30,7 +30,9 @@ export default function SeriesDetailScreen() {
   const router = useRouter();
   const {
     addInteraction,
+    removeInteraction,
     isInWatchlist,
+    isWatched: isWatchedFn,
     isFavorite,
     toggleEpisodeWatched,
     isEpisodeWatched,
@@ -57,6 +59,7 @@ export default function SeriesDetailScreen() {
 
   const show = showQuery.data;
   const inWatchlist = isInWatchlist(showId, 'tv');
+  const watched = isWatchedFn(showId, 'tv');
   const favorite = isFavorite(showId, 'tv');
   const interaction = getInteraction(showId, 'tv');
 
@@ -86,9 +89,17 @@ export default function SeriesDetailScreen() {
     router.back();
   };
 
+  const handleToggleWatched = () => {
+    if (watched) {
+      removeInteraction(showId, 'tv');
+    } else {
+      addInteraction(showId, 'tv', 'watched');
+    }
+  };
+
   const handleToggleWatchlist = () => {
     if (inWatchlist) {
-      addInteraction(showId, 'tv', 'watched');
+      removeInteraction(showId, 'tv');
     } else {
       addInteraction(showId, 'tv', 'watchlist');
     }
@@ -96,7 +107,7 @@ export default function SeriesDetailScreen() {
 
   const handleToggleFavorite = () => {
     if (favorite) {
-      addInteraction(showId, 'tv', 'watched');
+      removeInteraction(showId, 'tv');
     } else {
       addInteraction(showId, 'tv', 'favorite');
     }
@@ -260,24 +271,33 @@ export default function SeriesDetailScreen() {
               </View>
               <View style={styles.actions}>
                 <Pressable
+                  style={[styles.actionButton, watched && styles.watchedActive]}
+                  onPress={handleToggleWatched}
+                >
+                  <Check size={16} color={watched ? '#10B981' : Colors.dark.textSecondary} />
+                  <Text style={[styles.actionLabel, watched && styles.actionLabelWatched]}>İzledim</Text>
+                </Pressable>
+                <Pressable
                   style={[styles.actionButton, inWatchlist && styles.actionButtonActive]}
                   onPress={handleToggleWatchlist}
                 >
                   {inWatchlist ? (
-                    <BookmarkCheck size={18} color={Colors.dark.text} />
+                    <BookmarkCheck size={16} color={Colors.dark.primary} />
                   ) : (
-                    <Bookmark size={18} color={Colors.dark.text} />
+                    <Bookmark size={16} color={Colors.dark.textSecondary} />
                   )}
+                  <Text style={[styles.actionLabel, inWatchlist && styles.actionLabelActive]}>İzlenecek</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.actionButton, favorite && styles.favoriteActive]}
                   onPress={handleToggleFavorite}
                 >
                   <Heart
-                    size={18}
-                    color={favorite ? '#EF4444' : Colors.dark.text}
+                    size={16}
+                    color={favorite ? '#EF4444' : Colors.dark.textSecondary}
                     fill={favorite ? '#EF4444' : 'transparent'}
                   />
+                  <Text style={[styles.actionLabel, favorite && styles.actionLabelFavorite]}>Favori</Text>
                 </Pressable>
               </View>
             </View>
@@ -678,21 +698,42 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
+    marginTop: 4,
   },
   actionButton: {
-    width: 42,
-    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.dark.glass.background,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.dark.glass.border,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 3,
+    minWidth: 68,
+  },
+  actionLabel: {
+    color: Colors.dark.textSecondary,
+    fontSize: 10,
+    fontWeight: '600' as const,
+  },
+  actionLabelWatched: {
+    color: '#10B981',
+  },
+  actionLabelActive: {
+    color: Colors.dark.primary,
+  },
+  actionLabelFavorite: {
+    color: '#EF4444',
+  },
+  watchedActive: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderColor: 'rgba(16, 185, 129, 0.35)',
   },
   actionButtonActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-    borderColor: 'rgba(59, 130, 246, 0.4)',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderColor: 'rgba(59, 130, 246, 0.35)',
   },
   favoriteActive: {
     backgroundColor: 'rgba(239, 68, 68, 0.15)',

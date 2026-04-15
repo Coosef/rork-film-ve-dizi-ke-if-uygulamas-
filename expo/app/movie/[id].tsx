@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Plus, Check, Heart, Star, Clock, Calendar, Play, ExternalLink, MessageCircle, ThumbsUp, Building2, Globe, Edit3, Share2, Bookmark, BookmarkCheck } from 'lucide-react-native';
+import { ArrowLeft, Check, Heart, Star, Clock, Calendar, Play, ExternalLink, Edit3, Share2, Bookmark, BookmarkCheck } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import YouTubePlayer from '@/components/YouTubePlayer';
@@ -39,7 +39,7 @@ const BACKDROP_HEIGHT = SCREEN_WIDTH * 0.75;
 export default function MovieDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { addInteraction, isInWatchlist, isFavorite, addReview, getReview } = useLibrary();
+  const { addInteraction, removeInteraction, isInWatchlist, isWatched, isFavorite, addReview, getReview } = useLibrary();
   const insets = useSafeAreaInsets();
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -77,6 +77,7 @@ export default function MovieDetailScreen() {
 
   const movie = movieQuery.data;
   const inWatchlist = isInWatchlist(movieId, 'movie');
+  const watched = isWatched(movieId, 'movie');
   const favorite = isFavorite(movieId, 'movie');
   const userReview = getReview(movieId, 'movie');
 
@@ -84,9 +85,17 @@ export default function MovieDetailScreen() {
     router.back();
   };
 
+  const handleToggleWatched = () => {
+    if (watched) {
+      removeInteraction(movieId, 'movie');
+    } else {
+      addInteraction(movieId, 'movie', 'watched');
+    }
+  };
+
   const handleToggleWatchlist = () => {
     if (inWatchlist) {
-      addInteraction(movieId, 'movie', 'watched');
+      removeInteraction(movieId, 'movie');
     } else {
       addInteraction(movieId, 'movie', 'watchlist');
     }
@@ -94,7 +103,7 @@ export default function MovieDetailScreen() {
 
   const handleToggleFavorite = () => {
     if (favorite) {
-      addInteraction(movieId, 'movie', 'watched');
+      removeInteraction(movieId, 'movie');
     } else {
       addInteraction(movieId, 'movie', 'favorite');
     }
@@ -237,30 +246,33 @@ export default function MovieDetailScreen() {
               </View>
               <View style={styles.actions}>
                 <Pressable
+                  style={[styles.actionButton, watched && styles.watchedActive]}
+                  onPress={handleToggleWatched}
+                >
+                  <Check size={16} color={watched ? '#10B981' : Colors.dark.textSecondary} />
+                  <Text style={[styles.actionLabel, watched && styles.actionLabelWatched]}>İzledim</Text>
+                </Pressable>
+                <Pressable
                   style={[styles.actionButton, inWatchlist && styles.actionButtonActive]}
                   onPress={handleToggleWatchlist}
                 >
                   {inWatchlist ? (
-                    <BookmarkCheck size={18} color={Colors.dark.text} />
+                    <BookmarkCheck size={16} color={Colors.dark.primary} />
                   ) : (
-                    <Bookmark size={18} color={Colors.dark.text} />
+                    <Bookmark size={16} color={Colors.dark.textSecondary} />
                   )}
+                  <Text style={[styles.actionLabel, inWatchlist && styles.actionLabelActive]}>İzlenecek</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.actionButton, favorite && styles.favoriteActive]}
                   onPress={handleToggleFavorite}
                 >
                   <Heart
-                    size={18}
-                    color={favorite ? '#EF4444' : Colors.dark.text}
+                    size={16}
+                    color={favorite ? '#EF4444' : Colors.dark.textSecondary}
                     fill={favorite ? '#EF4444' : 'transparent'}
                   />
-                </Pressable>
-                <Pressable
-                  style={styles.actionButton}
-                  onPress={handleOpenReviewModal}
-                >
-                  <Star size={18} color={userReview ? '#FBBF24' : Colors.dark.text} fill={userReview ? '#FBBF24' : 'transparent'} />
+                  <Text style={[styles.actionLabel, favorite && styles.actionLabelFavorite]}>Favori</Text>
                 </Pressable>
               </View>
             </View>
@@ -723,21 +735,42 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
+    marginTop: 4,
   },
   actionButton: {
-    width: 42,
-    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.dark.glass.background,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.dark.glass.border,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 3,
+    minWidth: 68,
+  },
+  actionLabel: {
+    color: Colors.dark.textSecondary,
+    fontSize: 10,
+    fontWeight: '600' as const,
+  },
+  actionLabelWatched: {
+    color: '#10B981',
+  },
+  actionLabelActive: {
+    color: Colors.dark.primary,
+  },
+  actionLabelFavorite: {
+    color: '#EF4444',
+  },
+  watchedActive: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderColor: 'rgba(16, 185, 129, 0.35)',
   },
   actionButtonActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-    borderColor: 'rgba(59, 130, 246, 0.4)',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderColor: 'rgba(59, 130, 246, 0.35)',
   },
   favoriteActive: {
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
